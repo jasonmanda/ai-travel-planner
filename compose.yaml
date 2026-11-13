@@ -1,0 +1,17 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: ai-travel-planner-postgres
+    environment:
+      POSTGRES_DB: travel_planner
+      POSTGRES_USER: travel_user
+      POSTGRES_PASSWORD: travel_password
+    ports: ["5432:5432"]
+    volumes: ["travel_planner_data:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U travel_user -d travel_planner"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+volumes:
+  travel_planner_data: {}
