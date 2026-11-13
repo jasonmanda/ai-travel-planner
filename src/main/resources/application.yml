@@ -4,9 +4,9 @@ spring:
   application:
     name: ai-travel-planner
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/travel_planner}
-    username: ${DB_USERNAME:travel_user}
-    password: ${DB_PASSWORD:travel_password}
+    url: ${DB_URL:jdbc:postgresql://localhost:5433/traveler}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:Root@Root@123}
   jpa:
     open-in-view: false
     hibernate:
