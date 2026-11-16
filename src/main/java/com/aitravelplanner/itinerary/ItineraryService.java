@@ -68,13 +68,10 @@ public class ItineraryService {
                 """, UUID.class, tripId, destinationId,
                 "Séjour à " + destination.get("city") + " — " + durationDays + " jours");
 
-        int candidateLimit = Math.min(candidates.size(), durationDays * MAX_ITEMS_PER_DAY);
+        List<List<Map<String, Object>>> dailyAssignments =
+                ItineraryDistribution.distribute(candidates, durationDays, MAX_ITEMS_PER_DAY);
         for (int day = 1; day <= durationDays; day++) {
-            int from = (day - 1) * MAX_ITEMS_PER_DAY;
-            int to = Math.min(from + MAX_ITEMS_PER_DAY, candidateLimit);
-            List<Map<String, Object>> dayItems = from >= candidateLimit
-                    ? List.of()
-                    : candidates.subList(from, to);
+            List<Map<String, Object>> dayItems = dailyAssignments.get(day - 1);
 
             String summary = dayItems.isEmpty()
                     ? "Aucune activité du catalogue n'est disponible pour cette journée. Complétez le catalogue avant de présenter un programme détaillé."
