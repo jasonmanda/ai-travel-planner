@@ -38,12 +38,14 @@ final class ItineraryGeographicPlanner {
             }
         }
 
-        Comparator<Map<String, Object>> byPreferenceThenTitle =
+        Comparator<Map<String, Object>> byRecommendationThenTitle =
                 Comparator.<Map<String, Object>>comparingInt(ItineraryGeographicPlanner::preferenceScore)
                         .reversed()
+                        .thenComparing(Comparator.comparingInt(
+                                ItineraryGeographicPlanner::documentationScore).reversed())
                         .thenComparing(item -> String.valueOf(item.get("title")));
-        remaining.sort(byPreferenceThenTitle);
-        withoutCoordinates.sort(byPreferenceThenTitle);
+        remaining.sort(byRecommendationThenTitle);
+        withoutCoordinates.sort(byRecommendationThenTitle);
         List<List<Map<String, Object>>> groups = new ArrayList<>();
 
         while (!remaining.isEmpty()) {
@@ -60,6 +62,9 @@ final class ItineraryGeographicPlanner {
                                 .thenComparing(Comparator.comparingInt(
                                         (Map.Entry<Map<String, Object>, Double> entry) ->
                                                 preferenceScore(entry.getKey())).reversed())
+                                .thenComparing(Comparator.comparingInt(
+                                        (Map.Entry<Map<String, Object>, Double> entry) ->
+                                                documentationScore(entry.getKey())).reversed())
                                 .thenComparing(entry -> String.valueOf(entry.getKey().get("title"))))
                         .map(Map.Entry::getKey)
                         .orElse(null);
@@ -70,7 +75,7 @@ final class ItineraryGeographicPlanner {
                 group.add(nearest);
                 remaining.remove(nearest);
             }
-            group.sort(byPreferenceThenTitle);
+            group.sort(byRecommendationThenTitle);
             groups.add(group);
         }
 
@@ -146,6 +151,11 @@ final class ItineraryGeographicPlanner {
     private static int preferenceScore(Map<String, Object> item) {
         Object score = item.get("preferenceScore");
         return score instanceof Number number ? number.intValue() : 70;
+    }
+
+    private static int documentationScore(Map<String, Object> item) {
+        Object score = item.get("documentationScore");
+        return score instanceof Number number ? number.intValue() : 0;
     }
 
     private static boolean hasValidCoordinates(Map<String, Object> item) {
