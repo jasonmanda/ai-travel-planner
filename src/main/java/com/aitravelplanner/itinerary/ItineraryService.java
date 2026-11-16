@@ -157,9 +157,11 @@ public class ItineraryService {
                     WHERE day_id = ? ORDER BY sequence_number
                     """, day.get("id"));
             day.put("items", items);
+            day.put("dataQuality", ItineraryDataQuality.assessDay(items));
         }
 
         itinerary.put("days", days);
+        itinerary.put("dataQuality", ItineraryDataQuality.assessItinerary(days));
         itinerary.put("estimateDisclaimer",
                 "Les montants sont des estimations indicatives lorsqu'ils sont renseignés. Les éléments UNVERIFIED ne sont pas des informations confirmées. Vérifiez les tarifs, horaires, disponibilités et conditions auprès des sources officielles.");
         itinerary.put("planningPolicy",
