@@ -79,3 +79,55 @@ COMMENT ON COLUMN attraction_verification_history.verified_fields IS
     'Liste explicite des champs effectivement contrôlés lors de cette vérification.';
 COMMENT ON COLUMN activity_verification_history.verified_fields IS
     'Liste explicite des champs effectivement contrôlés lors de cette vérification.';
+
+-- Keep the current catalog status synchronized with each newly recorded review.
+-- last_verified_at changes only after a full VERIFIED review; partial/rejected reviews
+-- do not masquerade as a successful verification.
+CREATE FUNCTION sync_attraction_verification_status() RETURNS TRIGGER AS $$
+BEGIN
+    UPDATE attractions
+       SET data_status = NEW.verification_status,
+           last_verified_at = CASE
+               WHEN NEW.verification_status = 'VERIFIED' THEN NEW.verified_at
+               ELSE last_verified_at
+           END
+     WHERE id = NEW.attraction_id;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE FUNCTION sync_activity_verification_status() RETURNS TRIGGER AS $$
+BEGIN
+    UPDATE activities
+       SET data_status = NEW.verification_status,
+           last_verified_at = CASE
+               WHEN NEW.verification_status = 'VERIFIED' THEN NEW.verified_at
+               ELSE last_verified_at
+           END
+     WHERE id = NEW.activity_id;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_sync_attraction_verification_status
+AFTER INSERT ON attraction_verification_history
+FOR EACH ROW EXECUTE FUNCTION sync_attraction_verification_status();
+
+CREATE TRIGGER trg_sync_activity_verification_status
+AFTER INSERT ON activity_verification_history
+FOR EACH ROW EXECUTE FUNCTION sync_activity_verification_status();
+
+-- Verification events are append-only: corrections must be recorded as new events.
+CREATE FUNCTION prevent_catalog_verification_history_mutation() RETURNS TRIGGER AS $$
+BEGIN
+    RAISE EXCEPTION 'Catalog verification history is append-only; insert a new event instead';
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_attraction_verification_history_immutable
+BEFORE UPDATE OR DELETE ON attraction_verification_history
+FOR EACH ROW EXECUTE FUNCTION prevent_catalog_verification_history_mutation();
+
+CREATE TRIGGER trg_activity_verification_history_immutable
+BEFORE UPDATE OR DELETE ON activity_verification_history
+FOR EACH ROW EXECUTE FUNCTION prevent_catalog_verification_history_mutation();
