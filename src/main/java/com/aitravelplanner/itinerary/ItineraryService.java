@@ -159,7 +159,7 @@ public class ItineraryService {
                        c.name AS city, co.name AS country, co.iso_code AS "countryCode"
                 FROM itineraries i
                 JOIN cities c ON c.id = i.city_id
-                JOIN countries co ON co.id = i.country_id
+                JOIN countries co ON co.id = c.country_id
                 WHERE i.id = ?
                 """, itineraryId);
         if (rows.isEmpty()) {
