@@ -1,0 +1,160 @@
+package com.aitravelplanner.catalog;
+
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.core.Authentication;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.jdbc.core.ConnectionCallback;
+
+import java.net.URI;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+@RestController
+@RequestMapping("/api/v1/admin/catalog")
+public class CatalogVerificationController {
+
+    private static final Set<String> ATTRACTION_FIELDS = Set.of(
+            "name", "category", "description", "latitude", "longitude",
+            "estimated_visit_cost", "cost_currency", "estimated_duration_minutes"
+    );
+
+    private static final Set<String> ACTIVITY_FIELDS = Set.of(
+            "name", "category", "description", "latitude", "longitude",
+            "estimated_cost", "cost_currency", "estimated_duration_minutes",
+            "suitable_for_families", "min_age_years"
+    );
+
+    private final JdbcTemplate jdbc;
+
+    public CatalogVerificationController(JdbcTemplate jdbc) {
+        this.jdbc = jdbc;
+    }
+
+    @PostMapping("/attractions/{id}/verifications")
+    @Transactional
+    public Map<String, Object> verifyAttraction(
+            @PathVariable long id,
+            @Valid @RequestBody CatalogVerificationRequest request,
+            Authentication authentication) {
+        return createVerification(
+                "attractions", "attraction_verification_history", "attraction_id",
+                id, request, authentication, ATTRACTION_FIELDS
+        );
+    }
+
+    @PostMapping("/activities/{id}/verifications")
+    @Transactional
+    public Map<String, Object> verifyActivity(
+            @PathVariable long id,
+            @Valid @RequestBody CatalogVerificationRequest request,
+            Authentication authentication) {
+        return createVerification(
+                "activities", "activity_verification_history", "activity_id",
+                id, request, authentication, ACTIVITY_FIELDS
+        );
+    }
+
+    private Map<String, Object> createVerification(
+            String itemTable,
+            String historyTable,
+            String foreignKey,
+            long itemId,
+            CatalogVerificationRequest request,
+            Authentication authentication,
+            Set<String> allowedFields) {
+
+        if (itemId <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Identifiant invalide");
+        }
+
+        List<String> fields = request.verifiedFields().stream()
+                .map(String::trim)
+                .toList();
+
+        if (new LinkedHashSet<>(fields).size() != fields.size()
+                || !allowedFields.containsAll(fields)) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "verifiedFields contient des champs inconnus ou dupliqués"
+            );
+        }
+
+        validateSourceUrl(request.sourceUrl());
+
+        Integer count = jdbc.queryForObject(
+                "SELECT COUNT(*) FROM " + itemTable + " WHERE id = ?",
+                Integer.class,
+                itemId
+        );
+        if (count == null || count == 0) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Élément du catalogue introuvable");
+        }
+
+        String sql = "INSERT INTO " + historyTable + " (" + foreignKey
+                + ", verification_status, verified_fields, source_name, source_url,"
+                + " verification_notes, verified_by) VALUES (?, ?, ?, ?, ?, ?, ?)"
+                + " RETURNING id, verified_at";
+
+        Map<String, Object> saved = jdbc.execute((ConnectionCallback<Map<String, Object>>) connection -> {
+            try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                statement.setLong(1, itemId);
+                statement.setString(2, request.verificationStatus().name());
+                statement.setArray(3, connection.createArrayOf("text", fields.toArray()));
+                statement.setString(4, request.sourceName().trim());
+                statement.setString(5, request.sourceUrl().trim());
+                statement.setString(6, request.verificationNotes().trim());
+                statement.setString(7, authentication.getName());
+
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    if (!resultSet.next()) {
+                        throw new IllegalStateException("L'événement de vérification n'a pas été créé");
+                    }
+                    Map<String, Object> result = new LinkedHashMap<>();
+                    result.put("id", resultSet.getLong("id"));
+                    result.put("verifiedAt", resultSet.getObject("verified_at"));
+                    return result;
+                }
+            }
+        });
+
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("itemId", itemId);
+        response.put("verificationStatus", request.verificationStatus().name());
+        response.put("verifiedFields", fields);
+        response.put("sourceName", request.sourceName().trim());
+        response.put("sourceUrl", request.sourceUrl().trim());
+        response.put("verifiedBy", authentication.getName());
+        response.putAll(saved);
+        response.put("message", "Vérification enregistrée dans l'historique");
+        return response;
+    }
+
+    private void validateSourceUrl(String sourceUrl) {
+        try {
+            URI uri = URI.create(sourceUrl.trim());
+            String scheme = uri.getScheme();
+            if (uri.getHost() == null || scheme == null
+                    || !("http".equalsIgnoreCase(scheme) || "https".equalsIgnoreCase(scheme))) {
+                throw new IllegalArgumentException("URL non HTTP(S)");
+            }
+        } catch (IllegalArgumentException exception) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "sourceUrl doit être une URL HTTP ou HTTPS valide"
+            );
+        }
+    }
+}
