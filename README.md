@@ -5,8 +5,8 @@ API de démarrage : demandes de voyage, catalogue de destinations et premier mot
 ## Stack
 - Java 21 / Spring Boot 4.0.0
 - Spring MVC, Spring Data JPA, Validation, Actuator
-- PostgreSQL 16 + PostGIS 3.4
-- Flyway / Maven
+- PostgreSQL 16 standard (sans PostGIS)
+- Maven
 
 > Cette version est un socle backend. Les trois destinations et leurs budgets journaliers sont des données de démonstration, pas des prix vérifiés. Le calcul ne constitue pas encore une recommandation IA. Spring AI/OpenAI, les formalités officielles, les activités détaillées, les itinéraires et les réservations ne sont pas encore intégrés.
 
@@ -18,9 +18,27 @@ docker compose up -d
 mvn spring-boot:run
 ```
 
-API : http://localhost:8080 — santé : http://localhost:8080/actuator/health. Flyway crée le schéma et insère Zanzibar, Marrakech et Le Cap.
+API : http://localhost:8080 — santé : http://localhost:8080/actuator/health.
 
 Base locale : `travel_planner`, utilisateur `travel_user`, mot de passe `travel_password` (développement uniquement).
+
+## Gestion du schéma SQL
+
+Les évolutions de la base sont conservées sous forme de scripts SQL versionnés dans `src/main/resources/db/migration/` (V1, V2, etc.), mais **ils ne sont pas exécutés automatiquement**.
+
+- Exécuter manuellement chaque nouveau script SQL, dans l'ordre, sur la base cible.
+- Ne jamais réexécuter un script déjà appliqué.
+- Ne jamais modifier un ancien script déjà appliqué à une base existante : créer un nouveau fichier SQL avec le prochain numéro de version.
+- Avant une évolution, vérifier la structure et les données concernées, puis conserver le résultat de l'exécution.
+- Hibernate est configuré avec `ddl-auto: validate` : il vérifie la correspondance entre les entités et le schéma, sans créer ni modifier les tables.
+
+Pour appliquer manuellement un script depuis un terminal avec PostgreSQL :
+
+```bash
+psql "$DB_URL" -v ON_ERROR_STOP=1 -f src/main/resources/db/migration/V16__preserve_catalog_verification_history.sql
+```
+
+Adapter le nom du fichier à la migration à appliquer. Si la variable `DB_URL` n'est pas définie, utiliser explicitement les paramètres de connexion de votre environnement.
 
 ## Endpoints
 - `GET /api/v1/destinations`
@@ -57,12 +75,11 @@ Variables : `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `CORS_ALLOWED_ORIGINS`. Les 
 - Les formalités d'entrée doivent être alimentées par des sources officielles et datées.
 - Ajouter ensuite activités/attractions, itinéraire, tests d'intégration PostgreSQL, sécurité, puis Spring AI compatible avec Boot 4.
 
-
 ## Base de données MVP (sans PostGIS)
 
-Le MVP utilise PostgreSQL 16 standard. Les coordonnées sont stockées dans `cities.latitude` et `cities.longitude`. PostGIS n'est pas requis à ce stade. Les migrations Flyway V1 et V2 ne créent donc aucune extension PostgreSQL.
+Le MVP utilise PostgreSQL 16 standard. Les coordonnées sont stockées dans `cities.latitude` et `cities.longitude`. PostGIS n'est pas requis.
 
-Si une ancienne tentative Flyway a laissé une migration en échec, vérifiez `flyway_schema_history` avant de relancer. Ne supprimez pas le volume ni les données. Si V1 ou V2 a déjà été appliquée avec succès sur une base existante, ne modifiez pas ces migrations versionnées : créez plutôt une nouvelle migration corrective.
+Les scripts SQL versionnés sont appliqués manuellement. Si un script a échoué, examiner l'erreur et l'état réel du schéma avant toute nouvelle tentative. Ne supprimez pas le volume ni les données. Si un script a déjà été appliqué avec succès, ne le modifiez pas : ajoutez un nouveau script correctif.
 
 ## Recommendation Engine V2
 
@@ -77,9 +94,9 @@ A neutral score is used when a criterion is not supplied or cannot safely be com
 
 The response includes `scoreBreakdown`, `matchedInterests`, `estimateBasis`, `estimateLimitations`, coordinates, and `notEvaluatedCriteria`. Nationality/entry formalities, seasonality, departure transport cost, and destination scope are not scored yet because the current catalog has no verified data for them. This is intentional: no visa, flight-price, or seasonal claim is invented.
 
-### Flyway migration V3
+### SQL script V3
 
-`V3__add_estimate_currency.sql` adds `estimated_daily_budget_currency` with default `XOF`. Keep `ddl-auto: validate`; let Flyway apply the migration. Do not edit migrations already applied to a shared or production database.
+`V3__add_estimate_currency.sql` adds `estimated_daily_budget_currency` with default `XOF`. Apply it manually once to each database that needs this schema change. Keep `ddl-auto: validate`; Hibernate must not alter the schema.
 
 ### Test recommendation generation
 
