@@ -38,7 +38,10 @@ final class ItineraryGeographicPlanner {
             }
         }
 
-        remaining.sort(Comparator.comparing(item -> String.valueOf(item.get("title"))));
+        Comparator<Map<String, Object>> byTitle =
+                Comparator.comparing(item -> String.valueOf(item.get("title")));
+        remaining.sort(byTitle);
+        withoutCoordinates.sort(byTitle);
         List<List<Map<String, Object>>> groups = new ArrayList<>();
 
         while (!remaining.isEmpty()) {
@@ -85,6 +88,7 @@ final class ItineraryGeographicPlanner {
             int targetDay = -1;
             for (int day = 0; day < days.size(); day++) {
                 if (days.get(day).size() + group.size() <= maxItemsPerDay
+                        && compatibleDayArea(days.get(day), group)
                         && (targetDay == -1
                         || days.get(day).size() < days.get(targetDay).size())) {
                     targetDay = day;
@@ -110,10 +114,28 @@ final class ItineraryGeographicPlanner {
     }
 
     private static boolean compatibleAreas(Map<String, Object> first, Map<String, Object> second) {
-        Object firstArea = first.get("geographicArea");
-        Object secondArea = second.get("geographicArea");
-        return firstArea == null || secondArea == null
-                || String.valueOf(firstArea).equalsIgnoreCase(String.valueOf(secondArea));
+        return sameArea(first.get("geographicArea"), second.get("geographicArea"));
+    }
+
+    /**
+     * A day is reserved for one geographic area. Null is treated as its own
+     * unknown area: unknown-location entries can share with each other, but
+     * are never mixed with a named area without evidence of compatibility.
+     */
+    private static boolean compatibleDayArea(
+            List<Map<String, Object>> day, List<Map<String, Object>> group) {
+        if (day.isEmpty() || group.isEmpty()) {
+            return true;
+        }
+        Object targetArea = group.getFirst().get("geographicArea");
+        return day.stream().allMatch(item -> sameArea(item.get("geographicArea"), targetArea));
+    }
+
+    private static boolean sameArea(Object firstArea, Object secondArea) {
+        if (firstArea == null || secondArea == null) {
+            return firstArea == null && secondArea == null;
+        }
+        return String.valueOf(firstArea).trim().equalsIgnoreCase(String.valueOf(secondArea).trim());
     }
 
     private static boolean hasValidCoordinates(Map<String, Object> item) {
