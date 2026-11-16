@@ -195,6 +195,34 @@ class ItineraryGeographicPlannerTest {
         assertEquals(List.of("Unknown A", "Unknown B"), titles(days.get(1)));
     }
 
+    @Test
+    void prioritizesPreferenceMatchedGroupsWithoutMixingGeographicAreas() {
+        Map<String, Object> culture = item("Stone Town heritage", -6.1600, 39.1900, "STONE_TOWN");
+        culture.put("preferenceScore", 100);
+        Map<String, Object> beach = item("Nungwi beach", -5.7259, 39.2986, "NUNGWI");
+        beach.put("preferenceScore", 40);
+
+        List<List<Map<String, Object>>> days =
+                ItineraryGeographicPlanner.plan(List.of(beach, culture), 2, 3);
+
+        assertEquals(List.of("Stone Town heritage"), titles(days.getFirst()));
+        assertEquals(List.of("Nungwi beach"), titles(days.get(1)));
+    }
+
+    @Test
+    void keepsUnlocatedSuggestionsAfterLocatedGroupsEvenWhenTheirTitlesSortFirst() {
+        Map<String, Object> unlocated = item("A - Unknown location", null, null);
+        unlocated.put("preferenceScore", 100);
+        Map<String, Object> located = item("Z - Located attraction", -6.1600, 39.1900, "STONE_TOWN");
+        located.put("preferenceScore", 40);
+
+        List<List<Map<String, Object>>> days =
+                ItineraryGeographicPlanner.plan(List.of(unlocated, located), 2, 3);
+
+        assertEquals(List.of("Z - Located attraction"), titles(days.getFirst()));
+        assertEquals(List.of("A - Unknown location"), titles(days.get(1)));
+    }
+
     private static Map<String, Object> item(String title, Double latitude, Double longitude) {
         return item(title, latitude, longitude, null);
     }

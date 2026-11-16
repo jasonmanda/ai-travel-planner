@@ -38,10 +38,12 @@ final class ItineraryGeographicPlanner {
             }
         }
 
-        Comparator<Map<String, Object>> byTitle =
-                Comparator.comparing(item -> String.valueOf(item.get("title")));
-        remaining.sort(byTitle);
-        withoutCoordinates.sort(byTitle);
+        Comparator<Map<String, Object>> byPreferenceThenTitle =
+                Comparator.<Map<String, Object>>comparingInt(ItineraryGeographicPlanner::preferenceScore)
+                        .reversed()
+                        .thenComparing(item -> String.valueOf(item.get("title")));
+        remaining.sort(byPreferenceThenTitle);
+        withoutCoordinates.sort(byPreferenceThenTitle);
         List<List<Map<String, Object>>> groups = new ArrayList<>();
 
         while (!remaining.isEmpty()) {
@@ -55,6 +57,9 @@ final class ItineraryGeographicPlanner {
                         .filter(entry -> entry.getValue() <= MAX_CLUSTER_DISTANCE_KM)
                         .min(Comparator
                                 .comparingDouble((Map.Entry<Map<String, Object>, Double> entry) -> entry.getValue())
+                                .thenComparing(Comparator.comparingInt(
+                                        (Map.Entry<Map<String, Object>, Double> entry) ->
+                                                preferenceScore(entry.getKey())).reversed())
                                 .thenComparing(entry -> String.valueOf(entry.getKey().get("title"))))
                         .map(Map.Entry::getKey)
                         .orElse(null);
@@ -65,6 +70,7 @@ final class ItineraryGeographicPlanner {
                 group.add(nearest);
                 remaining.remove(nearest);
             }
+            group.sort(byPreferenceThenTitle);
             groups.add(group);
         }
 
@@ -73,7 +79,6 @@ final class ItineraryGeographicPlanner {
         for (Map<String, Object> item : withoutCoordinates) {
             groups.add(List.of(item));
         }
-
         List<List<Map<String, Object>>> days = new ArrayList<>(dayCount);
         for (int i = 0; i < dayCount; i++) {
             days.add(new ArrayList<>());
@@ -136,6 +141,11 @@ final class ItineraryGeographicPlanner {
             return firstArea == null && secondArea == null;
         }
         return String.valueOf(firstArea).trim().equalsIgnoreCase(String.valueOf(secondArea).trim());
+    }
+
+    private static int preferenceScore(Map<String, Object> item) {
+        Object score = item.get("preferenceScore");
+        return score instanceof Number number ? number.intValue() : 70;
     }
 
     private static boolean hasValidCoordinates(Map<String, Object> item) {

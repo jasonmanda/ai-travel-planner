@@ -22,11 +22,17 @@ public class ItineraryService {
     @Transactional
     public Map<String, Object> generate(UUID tripId, long destinationId) {
         Map<String, Object> trip = jdbc.query(
-                "SELECT id, duration_days, adults, children FROM trip_requests WHERE id = ?",
-                rs -> rs.next() ? Map.of(
-                        "id", rs.getObject("id", UUID.class),
-                        "durationDays", rs.getInt("duration_days"),
-                        "travellers", rs.getInt("adults") + rs.getInt("children")) : null,
+                "SELECT id, duration_days, adults, children, interests, travel_style FROM trip_requests WHERE id = ?",
+                rs -> {
+                    if (!rs.next()) return null;
+                    Map<String, Object> result = new LinkedHashMap<>();
+                    result.put("id", rs.getObject("id", UUID.class));
+                    result.put("durationDays", rs.getInt("duration_days"));
+                    result.put("travellers", rs.getInt("adults") + rs.getInt("children"));
+                    result.put("interests", rs.getString("interests"));
+                    result.put("travelStyle", rs.getString("travel_style"));
+                    return result;
+                },
                 tripId);
         if (trip == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Voyage introuvable: " + tripId);
@@ -45,7 +51,7 @@ public class ItineraryService {
 
         List<Map<String, Object>> rawCandidates = jdbc.queryForList("""
                 SELECT id AS "catalogItemId", 'ATTRACTION' AS "itemType", name AS title,
-                       description, latitude, longitude, geographic_area AS "geographicArea",
+                       category, description, latitude, longitude, geographic_area AS "geographicArea",
                        estimated_duration_minutes AS "estimatedDurationMinutes",
                        estimated_visit_cost AS "estimatedCost", cost_currency AS currency,
                        data_status AS "dataStatus", source_name AS "sourceName", source_url AS "sourceUrl",
@@ -55,7 +61,7 @@ public class ItineraryService {
                 WHERE city_id = ? AND active = TRUE
                 UNION ALL
                 SELECT act.id AS "catalogItemId", 'ACTIVITY' AS "itemType", act.name AS title,
-                       act.description, act.latitude, act.longitude,
+                       act.category, act.description, act.latitude, act.longitude,
                        act.geographic_area AS "geographicArea",
                        act.estimated_duration_minutes AS "estimatedDurationMinutes",
                        act.estimated_cost AS "estimatedCost", act.cost_currency AS currency,
@@ -74,6 +80,13 @@ public class ItineraryService {
                 """, destinationId, destinationId);
         List<Map<String, Object>> candidates =
                 CatalogDeduplication.removeSemanticDuplicates(rawCandidates);
+        String rawInterests = (String) trip.get("interests");
+        List<String> interests = rawInterests == null || rawInterests.isBlank()
+                ? List.of()
+                : Arrays.stream(rawInterests.split(",")).map(String::trim)
+                    .filter(value -> !value.isBlank()).toList();
+        String travelStyle = (String) trip.get("travelStyle");
+        candidates.forEach(item -> ItineraryPreferenceScorer.apply(item, interests, travelStyle));
 
         // Re-generation replaces the previous itinerary for this trip/destination.
         jdbc.update("DELETE FROM itineraries WHERE trip_id = ? AND city_id = ?", tripId, destinationId);
@@ -106,14 +119,16 @@ public class ItineraryService {
                         INSERT INTO itinerary_items(
                             day_id, sequence_number, item_type, catalog_item_id, title, description,
                             estimated_duration_minutes, estimated_cost, currency_code, data_status,
-                            source_name, source_url, latitude, longitude, geographic_area
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            source_name, source_url, latitude, longitude, geographic_area,
+                            preference_score, preference_reason
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """,
                         dayId, sequence++, item.get("itemType"), item.get("catalogItemId"),
                         item.get("title"), item.get("description"), item.get("estimatedDurationMinutes"),
                         item.get("estimatedCost"), item.get("currency"), item.get("dataStatus"),
                         item.get("sourceName"), item.get("sourceUrl"),
-                        item.get("latitude"), item.get("longitude"), item.get("geographicArea"));
+                        item.get("latitude"), item.get("longitude"), item.get("geographicArea"),
+                        item.get("preferenceScore"), item.get("preferenceReason"));
             }
         }
         return load(itineraryId);
@@ -152,7 +167,9 @@ public class ItineraryService {
                            estimated_cost AS "estimatedCost", currency_code AS currency,
                            data_status AS "dataStatus", source_name AS "sourceName",
                            source_url AS "sourceUrl", latitude, longitude,
-                           geographic_area AS "geographicArea"
+                           geographic_area AS "geographicArea",
+                           preference_score AS "preferenceScore",
+                           preference_reason AS "preferenceReason"
                     FROM itinerary_items
                     WHERE day_id = ? ORDER BY sequence_number
                     """, day.get("id"));
@@ -165,7 +182,7 @@ public class ItineraryService {
         itinerary.put("estimateDisclaimer",
                 "Les montants sont des estimations indicatives lorsqu'ils sont renseignés. Les éléments UNVERIFIED ne sont pas des informations confirmées. Vérifiez les tarifs, horaires, disponibilités et conditions auprès des sources officielles.");
         itinerary.put("planningPolicy",
-                "Le programme est construit à partir du catalogue disponible. Aucune activité, aucun prix ni horaire n'est inventé; les journées sans données restent à compléter. Les doublons explicitement identifiés sont écartés lorsque leur entrée canonique est présente.");
+                "Les suggestions sont classées selon la correspondance entre les catégories du catalogue, les centres d’intérêt et le style de voyage renseignés. Ce score mesure uniquement la pertinence déclarée, pas la qualité ni la vérification de l’expérience. La proximité géographique, les zones et les doublons restent prioritaires; aucune activité, aucun prix ni horaire n'est inventé.");
         return itinerary;
     }
 }
