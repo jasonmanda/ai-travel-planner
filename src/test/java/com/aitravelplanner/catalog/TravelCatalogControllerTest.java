@@ -24,7 +24,10 @@ class TravelCatalogControllerTest {
                         "name", "Excursion dans la forêt de Jozani",
                         "latitude", -6.26755,
                         "longitude", 39.41111,
-                        "geographicArea", "JOZANI"
+                        "geographicArea", "JOZANI",
+                        "duplicateOfType", "ATTRACTION",
+                        "duplicateOfId", 12L,
+                        "deduplicationRelation", "SAME_EXPERIENCE"
                 )));
 
         TravelCatalogController controller = new TravelCatalogController(jdbc);
@@ -34,5 +37,7 @@ class TravelCatalogControllerTest {
         assertEquals(-6.26755, ((Number) activities.getFirst().get("latitude")).doubleValue());
         assertEquals(39.41111, ((Number) activities.getFirst().get("longitude")).doubleValue());
         assertEquals("JOZANI", activities.getFirst().get("geographicArea"));
+        assertEquals("ATTRACTION", activities.getFirst().get("duplicateOfType"));
+        assertEquals(12L, activities.getFirst().get("duplicateOfId"));
     }
 }
