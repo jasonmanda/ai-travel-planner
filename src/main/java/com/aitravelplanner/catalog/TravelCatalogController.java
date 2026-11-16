@@ -90,14 +90,26 @@ public class TravelCatalogController {
 
     private List<Map<String, Object>> activities(long cityId) {
         return jdbc.queryForList("""
-                SELECT id, name, category, description, latitude, longitude,
-                       geographic_area AS "geographicArea",
-                       estimated_duration_minutes AS "estimatedDurationMinutes",
-                       estimated_cost AS "estimatedCost", cost_currency AS currency,
-                       suitable_for_families AS "suitableForFamilies", min_age_years AS "minAgeYears",
-                       data_status AS "dataStatus", source_name AS "sourceName",
-                       source_url AS "sourceUrl", last_verified_at AS "lastVerifiedAt"
-                FROM activities WHERE city_id = ? AND active = TRUE ORDER BY category, name
+                SELECT act.id, act.name, act.category, act.description, act.latitude, act.longitude,
+                       act.geographic_area AS "geographicArea",
+                       act.estimated_duration_minutes AS "estimatedDurationMinutes",
+                       act.estimated_cost AS "estimatedCost", act.cost_currency AS currency,
+                       act.suitable_for_families AS "suitableForFamilies", act.min_age_years AS "minAgeYears",
+                       act.data_status AS "dataStatus", act.source_name AS "sourceName",
+                       act.source_url AS "sourceUrl", act.last_verified_at AS "lastVerifiedAt",
+                       rel.canonical_item_type AS "duplicateOfType",
+                       rel.canonical_item_id AS "duplicateOfId",
+                       rel.relation_type AS "deduplicationRelation",
+                       rel.reason AS "deduplicationReason",
+                       rel.confidence AS "deduplicationConfidence"
+                FROM activities act
+                LEFT JOIN catalog_item_relations rel
+                  ON rel.city_id = act.city_id
+                 AND rel.duplicate_item_type = 'ACTIVITY'
+                 AND rel.duplicate_item_id = act.id
+                 AND rel.relation_type = 'SAME_EXPERIENCE'
+                WHERE act.city_id = ? AND act.active = TRUE
+                ORDER BY act.category, act.name
                 """, cityId);
     }
 
