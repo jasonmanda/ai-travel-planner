@@ -18,7 +18,7 @@ class ItineraryPreferenceScorerTest {
         ItineraryPreferenceScorer.apply(item, List.of("culture"), null);
 
         assertEquals(100, item.get("preferenceScore"));
-        assertTrue(((String) item.get("preferenceReason")).contains("correspond"));
+        assertTrue(((String) item.get("preferenceReason")).contains("correspondance"));
     }
 
     @Test
@@ -37,6 +37,27 @@ class ItineraryPreferenceScorerTest {
         ItineraryPreferenceScorer.apply(item, List.of(), "Détente");
 
         assertEquals(100, item.get("preferenceScore"));
+    }
+
+    @Test
+    void recognizesFrenchCoupleStyleAndExplainsTheMatch() {
+        Map<String, Object> item = item("BEACH");
+
+        ItineraryPreferenceScorer.apply(item, List.of(), "En couple");
+
+        assertEquals(100, item.get("preferenceScore"));
+        assertTrue(((String) item.get("preferenceReason")).contains("style « En couple »"));
+    }
+
+    @Test
+    void explainsTheExactInterestThatMatched() {
+        Map<String, Object> item = item("BEACH");
+
+        ItineraryPreferenceScorer.apply(item, List.of("Plage", "Gastronomie"), null);
+
+        assertEquals(100, item.get("preferenceScore"));
+        assertTrue(((String) item.get("preferenceReason")).contains("intérêt « Plage »"));
+        assertTrue(!((String) item.get("preferenceReason")).contains("Gastronomie"));
     }
 
     @Test
