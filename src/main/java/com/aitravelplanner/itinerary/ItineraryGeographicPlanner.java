@@ -79,12 +79,6 @@ final class ItineraryGeographicPlanner {
         for (Map<String, Object> item : withoutCoordinates) {
             groups.add(List.of(item));
         }
-        groups.sort(Comparator
-                .<List<Map<String, Object>>>comparingInt(group -> group.stream()
-                        .mapToInt(ItineraryGeographicPlanner::preferenceScore).max().orElse(70))
-                .reversed()
-                .thenComparing(group -> String.valueOf(group.getFirst().get("title"))));
-
         List<List<Map<String, Object>>> days = new ArrayList<>(dayCount);
         for (int i = 0; i < dayCount; i++) {
             days.add(new ArrayList<>());
