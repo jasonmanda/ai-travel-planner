@@ -1,5 +1,6 @@
 package com.aitravelplanner.recommendation;
 
+import com.aitravelplanner.common.TripNotFoundException;
 import com.aitravelplanner.destination.CityRepository;
 import com.aitravelplanner.trip.TripRequest;
 import com.aitravelplanner.trip.TripRequestRepository;
@@ -59,7 +60,7 @@ class RecommendationServiceTest {
         when(trips.findById(tripId)).thenReturn(Optional.empty());
 
         org.junit.jupiter.api.Assertions.assertThrows(
-                RuntimeException.class, () -> service.generate(tripId));
+                TripNotFoundException.class, () -> service.generate(tripId));
 
         verifyNoInteractions(recommendations);
         verifyNoInteractions(cities);
