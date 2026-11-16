@@ -17,11 +17,15 @@ public final class CatalogSourceTransparency {
         String dataStatus = value(item.get("dataStatus"), "UNVERIFIED");
 
         Map<String, Object> result = new LinkedHashMap<>();
+        result.put("sourceName", item.get("sourceName"));
+        result.put("sourceUrl", item.get("sourceUrl"));
         result.put("sourceType", sourceType);
         result.put("sourceTypeLabel", sourceTypeLabel(sourceType));
         result.put("sourceScope", sourceScope);
         result.put("sourceScopeLabel", sourceScopeLabel(sourceScope));
         result.put("verificationStatus", dataStatus);
+        result.put("verificationNotes", item.get("verificationNotes"));
+        result.put("lastVerifiedAt", item.get("lastVerifiedAt"));
         result.put("verified", "VERIFIED".equalsIgnoreCase(dataStatus));
         result.put("explanation", explanation(sourceType, sourceScope, dataStatus));
         result.put("limitations", limitations(sourceType, sourceScope));
@@ -52,7 +56,7 @@ public final class CatalogSourceTransparency {
         String coverage = sourceScopeLabel(scope);
         if ("VERIFIED".equalsIgnoreCase(status)) {
             return source + ". " + coverage
-                    + ". Cette fiche porte le statut VERIFIED dans le catalogue ; consultez les notes et la date de vérification pour connaître les éléments effectivement contrôlés.";
+                    + ". Cette fiche porte le statut VERIFIED dans le catalogue ; les notes et la date donnent le contexte de vérification. L'historique d'audit précise les champs effectivement contrôlés.";
         }
         return source + ". " + coverage
                 + ". Cette classification décrit la documentation disponible et ne confirme pas l'exactitude des informations de cette fiche.";

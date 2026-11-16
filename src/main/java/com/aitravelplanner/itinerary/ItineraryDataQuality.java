@@ -19,7 +19,9 @@ final class ItineraryDataQuality {
     private static final int COORDINATES_WEIGHT = 20;
     private static final int DURATION_WEIGHT = 15;
     private static final int COST_WEIGHT = 15;
-    private static final int TOTAL_WEIGHT = 100;
+    private static final List<String> VERIFICATION_STATUSES = List.of(
+            "VERIFIED", "PARTIALLY_VERIFIED", "UNVERIFIED", "REJECTED", "UNKNOWN"
+    );
 
     private ItineraryDataQuality() {
     }
@@ -28,7 +30,7 @@ final class ItineraryDataQuality {
         List<String> warnings = new ArrayList<>();
         if (items.isEmpty()) {
             warnings.add("NO_CATALOG_ITEMS");
-            return result(0, "NO_DATA", 0, warnings);
+            return result(0, "NO_DATA", 0, warnings, items);
         }
 
         int totalScore = 0;
@@ -47,8 +49,7 @@ final class ItineraryDataQuality {
                 uniqueWarnings.add("NOT_VERIFIED");
             }
 
-            if (item.get("latitude") instanceof Number
-                    && item.get("longitude") instanceof Number) {
+            if (hasValidCoordinates(item)) {
                 itemScore += COORDINATES_WEIGHT;
             } else {
                 uniqueWarnings.add("COORDINATES_MISSING");
@@ -74,13 +75,14 @@ final class ItineraryDataQuality {
         String status = score >= 80 ? "WELL_DOCUMENTED"
                 : score >= 50 ? "PARTIAL" : "LOW";
         warnings.addAll(uniqueWarnings);
-        return result(score, status, items.size(), warnings);
+        return result(score, status, items.size(), warnings, items);
     }
 
     static Map<String, Object> assessItinerary(List<Map<String, Object>> days) {
         int weightedScore = 0;
         int itemCount = 0;
         int daysWithoutItems = 0;
+        Map<String, Integer> statusCounts = emptyStatusCounts();
         for (Map<String, Object> day : days) {
             @SuppressWarnings("unchecked")
             Map<String, Object> quality = (Map<String, Object>) day.get("dataQuality");
@@ -90,6 +92,13 @@ final class ItineraryDataQuality {
             } else {
                 weightedScore += ((Number) quality.get("score")).intValue() * count;
                 itemCount += count;
+            }
+            @SuppressWarnings("unchecked")
+            Map<String, Number> dayStatusCounts =
+                    (Map<String, Number>) quality.get("verificationStatusCounts");
+            if (dayStatusCounts != null) {
+                dayStatusCounts.forEach((status, value) ->
+                        statusCounts.merge(status, value.intValue(), Integer::sum));
             }
         }
         int score = itemCount == 0 ? 0 : (int) Math.round(weightedScore / (double) itemCount);
@@ -101,19 +110,52 @@ final class ItineraryDataQuality {
         summary.put("status", status);
         summary.put("itemCount", itemCount);
         summary.put("daysWithoutItems", daysWithoutItems);
+        summary.put("verificationStatusCounts", statusCounts);
         summary.put("metric", "DATA_COMPLETENESS_NOT_EXPERIENCE_QUALITY");
         return summary;
     }
 
     private static Map<String, Object> result(
-            int score, String status, int itemCount, List<String> warnings) {
+            int score, String status, int itemCount, List<String> warnings,
+            List<Map<String, Object>> items) {
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("score", score);
         result.put("status", status);
         result.put("itemCount", itemCount);
         result.put("warnings", warnings);
+        result.put("verificationStatusCounts", verificationStatusCounts(items));
         result.put("metric", "DATA_COMPLETENESS_NOT_EXPERIENCE_QUALITY");
         return result;
+    }
+
+    private static Map<String, Integer> verificationStatusCounts(List<Map<String, Object>> items) {
+        Map<String, Integer> counts = emptyStatusCounts();
+        for (Map<String, Object> item : items) {
+            String status = item.get("dataStatus") == null
+                    ? "UNKNOWN" : String.valueOf(item.get("dataStatus")).trim().toUpperCase();
+            if (!counts.containsKey(status)) {
+                status = "UNKNOWN";
+            }
+            counts.merge(status, 1, Integer::sum);
+        }
+        return counts;
+    }
+
+    private static Map<String, Integer> emptyStatusCounts() {
+        Map<String, Integer> counts = new LinkedHashMap<>();
+        VERIFICATION_STATUSES.forEach(status -> counts.put(status, 0));
+        return counts;
+    }
+
+    private static boolean hasValidCoordinates(Map<String, Object> item) {
+        if (!(item.get("latitude") instanceof Number latitude)
+                || !(item.get("longitude") instanceof Number longitude)) {
+            return false;
+        }
+        double lat = latitude.doubleValue();
+        double lon = longitude.doubleValue();
+        return Double.isFinite(lat) && Double.isFinite(lon)
+                && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180;
     }
 
     private static boolean isHttpUrl(Object value) {
