@@ -1,6 +1,7 @@
 package com.aitravelplanner.itinerary;
 
 import java.text.Normalizer;
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -30,20 +31,39 @@ final class ItineraryPreferenceScorer {
             expected.addAll(categoriesForStyle(travelStyle));
         }
 
-        String category = normalize(String.valueOf(item.getOrDefault("category", ""))).toUpperCase(Locale.ROOT);
+        String category = normalize(String.valueOf(item.getOrDefault("category", "")))
+                .toUpperCase(Locale.ROOT);
         if (expected.isEmpty()) {
             item.put("preferenceScore", NEUTRAL_SCORE);
             item.put("preferenceReason", "Aucune préférence exploitable renseignée : classement neutre.");
         } else if (expected.contains(category)) {
             item.put("preferenceScore", MATCH_SCORE);
-            item.put("preferenceReason", "La catégorie " + item.get("category")
-                    + " correspond aux centres d’intérêt ou au style de voyage renseignés.");
+            item.put("preferenceReason", matchingReason(category, interests, travelStyle));
         } else {
             item.put("preferenceScore", MISMATCH_SCORE);
             item.put("preferenceReason", "La catégorie " + item.get("category")
                     + " ne correspond pas directement aux préférences renseignées; suggestion conservée.");
         }
         return item;
+    }
+
+    private static String matchingReason(String category, List<String> interests, String travelStyle) {
+        List<String> signals = new ArrayList<>();
+        if (interests != null) {
+            interests.stream()
+                    .filter(ItineraryPreferenceScorer::hasText)
+                    .filter(interest -> categoriesFor(interest).contains(category))
+                    .map(interest -> "intérêt « " + interest.trim() + " »")
+                    .forEach(signals::add);
+        }
+        if (hasText(travelStyle) && categoriesForStyle(travelStyle).contains(category)) {
+            signals.add("style « " + travelStyle.trim() + " »");
+        }
+        if (signals.isEmpty()) {
+            return "La catégorie " + category + " correspond aux préférences renseignées.";
+        }
+        return "Correspondance avec " + String.join(" et ", signals)
+                + " (catégorie " + category + ").";
     }
 
     private static Set<String> categoriesForStyle(String style) {
