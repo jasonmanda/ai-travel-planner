@@ -209,6 +209,20 @@ class ItineraryGeographicPlannerTest {
         assertEquals(List.of("Nungwi beach"), titles(days.get(1)));
     }
 
+    @Test
+    void keepsUnlocatedSuggestionsAfterLocatedGroupsEvenWhenTheirTitlesSortFirst() {
+        Map<String, Object> unlocated = item("A - Unknown location", null, null);
+        unlocated.put("preferenceScore", 100);
+        Map<String, Object> located = item("Z - Located attraction", -6.1600, 39.1900, "STONE_TOWN");
+        located.put("preferenceScore", 40);
+
+        List<List<Map<String, Object>>> days =
+                ItineraryGeographicPlanner.plan(List.of(unlocated, located), 2, 3);
+
+        assertEquals(List.of("Z - Located attraction"), titles(days.getFirst()));
+        assertEquals(List.of("A - Unknown location"), titles(days.get(1)));
+    }
+
     private static Map<String, Object> item(String title, Double latitude, Double longitude) {
         return item(title, latitude, longitude, null);
     }
