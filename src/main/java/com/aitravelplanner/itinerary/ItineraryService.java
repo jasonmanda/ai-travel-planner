@@ -6,7 +6,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.math.BigDecimal;
 import java.util.*;
 
 @Service
@@ -136,7 +135,7 @@ public class ItineraryService {
                     SELECT id, sequence_number AS "sequence", item_type AS "type",
                            catalog_item_id AS "catalogItemId", title, description,
                            estimated_duration_minutes AS "estimatedDurationMinutes",
-                           estimated_cost AS "estimatedCost", currency,
+                           estimated_cost AS "estimatedCost", currency_code AS currency,
                            data_status AS "dataStatus", source_name AS "sourceName",
                            source_url AS "sourceUrl"
                     FROM itinerary_items
