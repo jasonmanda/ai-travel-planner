@@ -20,6 +20,7 @@ class ItineraryDataQualityTest {
         assertEquals(100, quality.get("score"));
         assertEquals("WELL_DOCUMENTED", quality.get("status"));
         assertEquals(List.of(), quality.get("warnings"));
+        assertEquals(1, ((Map<?, ?>) quality.get("verificationStatusCounts")).get("VERIFIED"));
     }
 
     @Test
@@ -31,15 +32,17 @@ class ItineraryDataQualityTest {
         assertEquals("LOW", quality.get("status"));
         assertTrue(((List<?>) quality.get("warnings")).contains("NOT_VERIFIED"));
         assertTrue(((List<?>) quality.get("warnings")).contains("COST_MISSING"));
+        assertEquals(1, ((Map<?, ?>) quality.get("verificationStatusCounts")).get("UNVERIFIED"));
     }
 
     @Test
-    void treatsEmptyDayAsNoData() {
+    void treatsEmptyDayAsNoDataWithZeroVerificationCounts() {
         Map<String, Object> quality = ItineraryDataQuality.assessDay(List.of());
 
         assertEquals("NO_DATA", quality.get("status"));
         assertEquals(0, quality.get("score"));
         assertEquals(0, quality.get("itemCount"));
+        assertEquals(0, ((Map<?, ?>) quality.get("verificationStatusCounts")).get("VERIFIED"));
     }
 
     @Test
@@ -60,6 +63,36 @@ class ItineraryDataQualityTest {
         assertEquals(2, summary.get("itemCount"));
         assertEquals(1, summary.get("daysWithoutItems"));
         assertEquals("PARTIAL", summary.get("status"));
+        Map<?, ?> counts = (Map<?, ?>) summary.get("verificationStatusCounts");
+        assertEquals(1, counts.get("VERIFIED"));
+        assertEquals(1, counts.get("UNVERIFIED"));
+        assertEquals(0, counts.get("REJECTED"));
+    }
+
+    @Test
+    void countsAllVerificationStatusesForADay() {
+        Map<String, Object> quality = ItineraryDataQuality.assessDay(List.of(
+                item("VERIFIED", true, true, true, true),
+                item("PARTIALLY_VERIFIED", true, true, true, true),
+                item("UNVERIFIED", true, true, true, true),
+                item("REJECTED", true, true, true, true)));
+
+        Map<?, ?> counts = (Map<?, ?>) quality.get("verificationStatusCounts");
+        assertEquals(1, counts.get("VERIFIED"));
+        assertEquals(1, counts.get("PARTIALLY_VERIFIED"));
+        assertEquals(1, counts.get("UNVERIFIED"));
+        assertEquals(1, counts.get("REJECTED"));
+    }
+
+    @Test
+    void rejectsOutOfRangeCoordinatesWhenScoringDataCompleteness() {
+        Map<String, Object> item = item("VERIFIED", true, true, true, true);
+        item.put("latitude", 91.0);
+
+        Map<String, Object> quality = ItineraryDataQuality.assessDay(List.of(item));
+
+        assertEquals(80, quality.get("score"));
+        assertTrue(((List<?>) quality.get("warnings")).contains("COORDINATES_MISSING"));
     }
 
     @Test
