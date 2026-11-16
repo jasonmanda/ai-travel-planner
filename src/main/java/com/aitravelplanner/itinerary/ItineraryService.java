@@ -44,14 +44,16 @@ public class ItineraryService {
 
         List<Map<String, Object>> candidates = jdbc.queryForList("""
                 SELECT id AS "catalogItemId", 'ATTRACTION' AS "itemType", name AS title,
-                       description, estimated_duration_minutes AS "estimatedDurationMinutes",
+                       description, latitude, longitude,
+                       estimated_duration_minutes AS "estimatedDurationMinutes",
                        estimated_visit_cost AS "estimatedCost", cost_currency AS currency,
                        data_status AS "dataStatus", source_name AS "sourceName", source_url AS "sourceUrl"
                 FROM attractions
                 WHERE city_id = ? AND active = TRUE
                 UNION ALL
                 SELECT id AS "catalogItemId", 'ACTIVITY' AS "itemType", name AS title,
-                       description, estimated_duration_minutes AS "estimatedDurationMinutes",
+                       description, latitude, longitude,
+                       estimated_duration_minutes AS "estimatedDurationMinutes",
                        estimated_cost AS "estimatedCost", cost_currency AS currency,
                        data_status AS "dataStatus", source_name AS "sourceName", source_url AS "sourceUrl"
                 FROM activities
@@ -69,7 +71,7 @@ public class ItineraryService {
                 "Séjour à " + destination.get("city") + " — " + durationDays + " jours");
 
         List<List<Map<String, Object>>> dailyAssignments =
-                ItineraryDistribution.distribute(candidates, durationDays, MAX_ITEMS_PER_DAY);
+                ItineraryGeographicPlanner.plan(candidates, durationDays, MAX_ITEMS_PER_DAY);
         for (int day = 1; day <= durationDays; day++) {
             List<Map<String, Object>> dayItems = dailyAssignments.get(day - 1);
 
@@ -90,13 +92,14 @@ public class ItineraryService {
                         INSERT INTO itinerary_items(
                             day_id, sequence_number, item_type, catalog_item_id, title, description,
                             estimated_duration_minutes, estimated_cost, currency_code, data_status,
-                            source_name, source_url
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            source_name, source_url, latitude, longitude
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """,
                         dayId, sequence++, item.get("itemType"), item.get("catalogItemId"),
                         item.get("title"), item.get("description"), item.get("estimatedDurationMinutes"),
                         item.get("estimatedCost"), item.get("currency"), item.get("dataStatus"),
-                        item.get("sourceName"), item.get("sourceUrl"));
+                        item.get("sourceName"), item.get("sourceUrl"),
+                        item.get("latitude"), item.get("longitude"));
             }
         }
         return load(itineraryId);
@@ -134,7 +137,7 @@ public class ItineraryService {
                            estimated_duration_minutes AS "estimatedDurationMinutes",
                            estimated_cost AS "estimatedCost", currency_code AS currency,
                            data_status AS "dataStatus", source_name AS "sourceName",
-                           source_url AS "sourceUrl"
+                           source_url AS "sourceUrl", latitude, longitude
                     FROM itinerary_items
                     WHERE day_id = ? ORDER BY sequence_number
                     """, day.get("id"));
