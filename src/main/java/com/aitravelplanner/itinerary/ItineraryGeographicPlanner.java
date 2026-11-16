@@ -82,11 +82,16 @@ final class ItineraryGeographicPlanner {
             if (placed + group.size() > capacity) {
                 continue;
             }
-            int targetDay = 0;
-            for (int day = 1; day < days.size(); day++) {
-                if (days.get(day).size() < days.get(targetDay).size()) {
+            int targetDay = -1;
+            for (int day = 0; day < days.size(); day++) {
+                if (days.get(day).size() + group.size() <= maxItemsPerDay
+                        && (targetDay == -1
+                        || days.get(day).size() < days.get(targetDay).size())) {
                     targetDay = day;
                 }
+            }
+            if (targetDay == -1) {
+                continue;
             }
             days.get(targetDay).addAll(group);
             placed += group.size();
