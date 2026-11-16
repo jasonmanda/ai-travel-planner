@@ -40,8 +40,13 @@ public class RecommendationService {
 
         List<String> interests = split(trip.getInterests());
         int travellers = trip.getAdults() + trip.getChildren();
-        List<Map<String, Object>> results = new ArrayList<>();
 
+        // Replace the previous result set so retries and changed criteria remain safe.
+        // Flush the deletes before inserting rows protected by the (trip_id, city_id) unique constraint.
+        recommendations.deleteByTripId(tripId);
+        recommendations.flush();
+
+        List<Map<String, Object>> results = new ArrayList<>();
         for (City city : cities.findAllByOrderByNameAsc()) {
             List<String> tags = split(city.getTags());
             List<String> matchedInterests = interests.stream()
