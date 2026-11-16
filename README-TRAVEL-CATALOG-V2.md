@@ -2,13 +2,15 @@
 
 Le backend expose un catalogue structuré par destination sans dépendance PostGIS.
 
-## Migrations
+## Scripts SQL
+
+Les fichiers `V1__...`, `V2__...`, etc. sont des scripts SQL versionnés et exécutés manuellement. Ils ne sont pas appliqués automatiquement au démarrage de l'application.
 
 - `V4__create_travel_catalog.sql` crée les tables `attractions`, `activities`, `city_budget_components` et `city_seasons`.
 - `V7__seed_zanzibar_geographic_sample.sql` ajoute trois points géographiques de référence dans Stone Town.
 - `V8__enrich_zanzibar_travel_catalog.sql` enrichit Zanzibar avec des attractions patrimoniales, naturelles et balnéaires ainsi que des idées d'activités.
 
-Ne modifiez jamais une migration déjà appliquée : ajoutez une nouvelle migration Flyway.
+Ne réexécutez pas un script déjà appliqué et ne modifiez jamais un ancien script appliqué : ajoutez un nouveau fichier SQL avec le prochain numéro de version.
 
 ## Endpoints
 
@@ -44,4 +46,4 @@ mvn clean test
 mvn spring-boot:run
 ```
 
-Flyway applique automatiquement les migrations non encore enregistrées. Conserver `spring.jpa.hibernate.ddl-auto: validate`.
+Hibernate conserve `spring.jpa.hibernate.ddl-auto: validate` : il valide le schéma existant, mais ne crée ni ne modifie les tables. Appliquer les scripts SQL nécessaires manuellement avant de démarrer l'application.
