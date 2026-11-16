@@ -79,6 +79,7 @@ public class TravelCatalogController {
     private List<Map<String, Object>> attractions(long cityId) {
         return jdbc.queryForList("""
                 SELECT id, name, category, description, latitude, longitude,
+                       geographic_area AS "geographicArea",
                        estimated_visit_cost AS "estimatedCost", cost_currency AS currency,
                        estimated_duration_minutes AS "estimatedDurationMinutes",
                        data_status AS "dataStatus", source_name AS "sourceName",
@@ -90,6 +91,7 @@ public class TravelCatalogController {
     private List<Map<String, Object>> activities(long cityId) {
         return jdbc.queryForList("""
                 SELECT id, name, category, description, latitude, longitude,
+                       geographic_area AS "geographicArea",
                        estimated_duration_minutes AS "estimatedDurationMinutes",
                        estimated_cost AS "estimatedCost", cost_currency AS currency,
                        suitable_for_families AS "suitableForFamilies", min_age_years AS "minAgeYears",
