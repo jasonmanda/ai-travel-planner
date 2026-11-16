@@ -35,7 +35,7 @@ Les évolutions de la base sont conservées sous forme de scripts SQL versionné
 Pour appliquer manuellement un script depuis un terminal avec PostgreSQL :
 
 ```bash
-psql "$DB_URL" -v ON_ERROR_STOP=1 -f src/main/resources/db/migration/V16__preserve_catalog_verification_history.sql
+psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USERNAME" -d "$DB_NAME" -v ON_ERROR_STOP=1 -f src/main/resources/db/migration/V16__preserve_catalog_verification_history.sql
 ```
 
 Adapter le nom du fichier à la migration à appliquer. Si la variable `DB_URL` n'est pas définie, utiliser explicitement les paramètres de connexion de votre environnement.
