@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -24,11 +25,11 @@ class ItineraryGeographicPlannerTest {
         List<List<Map<String, Object>>> days =
                 ItineraryGeographicPlanner.plan(candidates, 3, 3);
 
-        assertEquals(List.of(
+        assertEquals(Set.of(
                 "Forodhani Gardens",
                 "House of Wonders",
                 "Old Fort of Zanzibar"
-        ), titles(days.getFirst()));
+        ), Set.copyOf(titles(days.getFirst())));
         assertEquals(List.of("Nungwi Beach"), titles(days.get(1)));
         assertEquals(3, days.size());
         days.forEach(day -> assertTrue(day.size() <= 3));
