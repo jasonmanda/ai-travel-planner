@@ -144,16 +144,40 @@ public class CatalogVerificationController {
 
     private void validateSourceUrl(String sourceUrl) {
         try {
-            URI uri = URI.create(sourceUrl.trim());
+            if (sourceUrl == null || sourceUrl.isBlank()) {
+                throw new IllegalArgumentException("URL vide");
+            }
+
+            String normalizedUrl = sourceUrl.trim();
+
+            // Une URL doit être fournie directement, pas sous forme de lien Markdown.
+            if (normalizedUrl.matches("(?is)^\\[[^\\]]+\\]\\(https?://[^)]+\\)$")) {
+                throw new IllegalArgumentException("Lien Markdown interdit");
+            }
+
+            // Aucun espace ou caractère blanc à l'intérieur de l'URL.
+            if (normalizedUrl.chars().anyMatch(Character::isWhitespace)) {
+                throw new IllegalArgumentException("Espace interdit");
+            }
+
+            URI uri = URI.create(normalizedUrl);
             String scheme = uri.getScheme();
-            if (uri.getHost() == null || scheme == null
-                    || !("http".equalsIgnoreCase(scheme) || "https".equalsIgnoreCase(scheme))) {
+
+            if (!uri.isAbsolute()
+                    || uri.getHost() == null
+                    || uri.getRawAuthority() == null
+                    || uri.getUserInfo() != null
+                    || uri.getPort() > 65535
+                    || scheme == null
+                    || !("http".equalsIgnoreCase(scheme)
+                    || "https".equalsIgnoreCase(scheme))) {
                 throw new IllegalArgumentException("URL non HTTP(S)");
             }
+
         } catch (IllegalArgumentException exception) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-                    "sourceUrl doit être une URL HTTP ou HTTPS valide"
+                    "sourceUrl doit être une URL HTTP ou HTTPS valide, sans format Markdown"
             );
         }
     }
