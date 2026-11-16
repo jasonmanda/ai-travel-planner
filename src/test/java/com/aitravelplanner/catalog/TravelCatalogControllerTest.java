@@ -39,5 +39,9 @@ class TravelCatalogControllerTest {
         assertEquals("JOZANI", activities.getFirst().get("geographicArea"));
         assertEquals("ATTRACTION", activities.getFirst().get("duplicateOfType"));
         assertEquals(12L, activities.getFirst().get("duplicateOfId"));
+        @SuppressWarnings("unchecked")
+        Map<String, Object> quality = (Map<String, Object>) activities.getFirst().get("catalogQuality");
+        assertEquals("DATA_COMPLETENESS_NOT_EXPERIENCE_QUALITY", quality.get("metric"));
+        assertEquals(20, quality.get("score"));
     }
 }

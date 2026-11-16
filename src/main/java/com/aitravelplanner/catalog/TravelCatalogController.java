@@ -77,7 +77,7 @@ public class TravelCatalogController {
     }
 
     private List<Map<String, Object>> attractions(long cityId) {
-        return jdbc.queryForList("""
+        return withQuality(jdbc.queryForList("""
                 SELECT id, name, category, description, latitude, longitude,
                        geographic_area AS "geographicArea",
                        estimated_visit_cost AS "estimatedCost", cost_currency AS currency,
@@ -85,11 +85,11 @@ public class TravelCatalogController {
                        data_status AS "dataStatus", source_name AS "sourceName",
                        source_url AS "sourceUrl", last_verified_at AS "lastVerifiedAt"
                 FROM attractions WHERE city_id = ? AND active = TRUE ORDER BY name
-                """, cityId);
+                """, cityId));
     }
 
     private List<Map<String, Object>> activities(long cityId) {
-        return jdbc.queryForList("""
+        return withQuality(jdbc.queryForList("""
                 SELECT act.id, act.name, act.category, act.description, act.latitude, act.longitude,
                        act.geographic_area AS "geographicArea",
                        act.estimated_duration_minutes AS "estimatedDurationMinutes",
@@ -110,7 +110,15 @@ public class TravelCatalogController {
                  AND rel.relation_type = 'SAME_EXPERIENCE'
                 WHERE act.city_id = ? AND act.active = TRUE
                 ORDER BY act.category, act.name
-                """, cityId);
+                """, cityId));
+    }
+
+    private List<Map<String, Object>> withQuality(List<Map<String, Object>> items) {
+        return items.stream().map(item -> {
+            Map<String, Object> enriched = new LinkedHashMap<>(item);
+            enriched.put("catalogQuality", CatalogDataQuality.assess(enriched));
+            return enriched;
+        }).toList();
     }
 
     private List<Map<String, Object>> budget(long cityId) {
