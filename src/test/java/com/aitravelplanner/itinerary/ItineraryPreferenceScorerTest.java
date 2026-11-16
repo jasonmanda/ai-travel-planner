@@ -18,7 +18,7 @@ class ItineraryPreferenceScorerTest {
         ItineraryPreferenceScorer.apply(item, List.of("culture"), null);
 
         assertEquals(100, item.get("preferenceScore"));
-        assertTrue(((String) item.get("preferenceReason")).contains("correspondance"));
+        assertTrue(((String) item.get("preferenceReason")).contains("Correspondance"));
     }
 
     @Test
