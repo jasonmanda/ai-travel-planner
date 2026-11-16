@@ -62,6 +62,17 @@ class ItineraryDataQualityTest {
         assertEquals("PARTIAL", summary.get("status"));
     }
 
+    @Test
+    void doesNotCountMarkdownWrappedSourceAsValidUrl() {
+        Map<String, Object> item = item("UNVERIFIED", true, true, false, false);
+        item.put("sourceUrl", "[https://example.org/source](https://example.org/source)");
+
+        Map<String, Object> quality = ItineraryDataQuality.assessDay(List.of(item));
+
+        assertEquals(20, quality.get("score"));
+        assertTrue(((List<?>) quality.get("warnings")).contains("SOURCE_MISSING"));
+    }
+
     private static Map<String, Object> item(
             String status, boolean source, boolean coordinates,
             boolean duration, boolean cost) {
