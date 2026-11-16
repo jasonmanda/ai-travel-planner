@@ -8,16 +8,39 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ItineraryGeographicPlannerTest {
 
     @Test
-    void groupsNearbyLocationsInTheSameDay() {
+    void groupsThreeNearbyStoneTownAttractionsOnTheSameDay() {
         List<Map<String, Object>> candidates = List.of(
-                item("A - Stone Town",  -6.1600, 39.1900),
+                item("Forodhani Gardens", -6.160680, 39.188616),
+                item("House of Wonders", -6.160914, 39.189591),
+                item("Old Fort of Zanzibar", -6.161390, 39.189170),
+                item("Nungwi Beach", -5.7260, 39.2980)
+        );
+
+        List<List<Map<String, Object>>> days =
+                ItineraryGeographicPlanner.plan(candidates, 3, 3);
+
+        assertEquals(List.of(
+                "Forodhani Gardens",
+                "House of Wonders",
+                "Old Fort of Zanzibar"
+        ), titles(days.getFirst()));
+        assertEquals(List.of("Nungwi Beach"), titles(days.get(1)));
+        assertEquals(3, days.size());
+        days.forEach(day -> assertTrue(day.size() <= 3));
+    }
+
+    @Test
+    void keepsNearbyLocationsTogetherAndSeparatesFarLocations() {
+        List<Map<String, Object>> candidates = List.of(
+                item("A - Stone Town", -6.1600, 39.1900),
                 item("B - North Coast", -5.9000, 39.3000),
                 item("C - Nearby site", -6.1610, 39.1910),
-                item("D - Far site",     -6.0000, 39.5000)
+                item("D - Far site", -6.0000, 39.5000)
         );
 
         List<List<Map<String, Object>>> days =
@@ -76,6 +99,12 @@ class ItineraryGeographicPlannerTest {
     void rejectsInvalidDayCount() {
         assertThrows(IllegalArgumentException.class,
                 () -> ItineraryGeographicPlanner.plan(List.of(), 0, 3));
+    }
+
+    @Test
+    void rejectsInvalidDailyCapacity() {
+        assertThrows(IllegalArgumentException.class,
+                () -> ItineraryGeographicPlanner.plan(List.of(), 2, 0));
     }
 
     private static Map<String, Object> item(String title, Double latitude, Double longitude) {
