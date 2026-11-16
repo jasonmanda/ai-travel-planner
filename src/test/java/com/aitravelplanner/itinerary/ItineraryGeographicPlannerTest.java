@@ -25,7 +25,7 @@ class ItineraryGeographicPlannerTest {
 
         assertEquals(List.of("A - Stone Town", "C - Nearby site"),
                 titles(days.get(0)));
-        assertEquals(List.of("D - Far site", "B - North Coast"),
+        assertEquals(List.of("B - North Coast", "D - Far site"),
                 titles(days.get(1)));
     }
 
