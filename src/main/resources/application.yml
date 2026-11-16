@@ -12,13 +12,11 @@ spring:
   jpa:
     open-in-view: false
     hibernate:
+      # SQL schema changes are applied manually; Hibernate only validates the mapped schema.
       ddl-auto: validate
     properties:
       hibernate:
         format_sql: true
-  flyway:
-    enabled: true
-    locations: classpath:db/migration
 
 management:
   endpoints:
