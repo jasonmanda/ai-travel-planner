@@ -135,7 +135,7 @@ public class ItineraryService {
                     SELECT id, sequence_number AS "sequence", item_type AS "type",
                            catalog_item_id AS "catalogItemId", title, description,
                            estimated_duration_minutes AS "estimatedDurationMinutes",
-                           estimated_cost AS "estimatedCost", currency_code AS currency,
+                           estimated_cost AS "estimatedCost", cost_currency AS currency,
                            data_status AS "dataStatus", source_name AS "sourceName",
                            source_url AS "sourceUrl"
                     FROM itinerary_items
