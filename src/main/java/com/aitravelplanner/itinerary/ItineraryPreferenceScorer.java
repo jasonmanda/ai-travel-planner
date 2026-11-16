@@ -1,7 +1,6 @@
 package com.aitravelplanner.itinerary;
 
 import java.text.Normalizer;
-import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -31,7 +30,7 @@ final class ItineraryPreferenceScorer {
             expected.addAll(categoriesForStyle(travelStyle));
         }
 
-        String category = normalize(String.valueOf(item.getOrDefault("category", "")));
+        String category = normalize(String.valueOf(item.getOrDefault("category", ""))).toUpperCase(Locale.ROOT);
         if (expected.isEmpty()) {
             item.put("preferenceScore", NEUTRAL_SCORE);
             item.put("preferenceReason", "Aucune préférence exploitable renseignée : classement neutre.");
