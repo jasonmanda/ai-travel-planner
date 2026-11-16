@@ -5,7 +5,10 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -13,6 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -94,6 +98,26 @@ class CatalogVerificationControllerTest {
 
         assertEquals(400, exception.getStatusCode().value());
         verifyNoInteractions(jdbc);
+    }
+
+    @Test
+    void rejectsPriceVerificationWhenCurrentPriceOrCurrencyIsMissing() {
+        when(jdbc.queryForObject(anyString(), eq(Integer.class), eq(1L))).thenReturn(1);
+        Map<String, Object> currentPrice = new HashMap<>();
+        currentPrice.put("price", new BigDecimal("25.00"));
+        currentPrice.put("currency", null);
+        when(jdbc.queryForMap(anyString(), eq(1L))).thenReturn(currentPrice);
+
+        CatalogVerificationRequest request = request(List.of(
+                "estimated_visit_cost", "cost_currency"
+        ));
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> controller.verifyAttraction(1L, request, admin)
+        );
+
+        assertEquals(400, exception.getStatusCode().value());
     }
 
     private CatalogVerificationRequest request(List<String> fields) {
