@@ -16,10 +16,10 @@ class ItineraryGeographicPlannerTest {
     @Test
     void groupsThreeNearbyStoneTownAttractionsOnTheSameDay() {
         List<Map<String, Object>> candidates = List.of(
-                item("Forodhani Gardens", -6.160680, 39.188616),
-                item("House of Wonders", -6.160914, 39.189591),
-                item("Old Fort of Zanzibar", -6.161390, 39.189170),
-                item("Nungwi Beach", -5.7260, 39.2980)
+                item("Forodhani Gardens", -6.160680, 39.188616, "STONE_TOWN"),
+                item("House of Wonders", -6.160914, 39.189591, "STONE_TOWN"),
+                item("Old Fort of Zanzibar", -6.161390, 39.189170, "STONE_TOWN"),
+                item("Nungwi Beach", -5.7260, 39.2980, "NUNGWI")
         );
 
         List<List<Map<String, Object>>> days =
@@ -51,6 +51,20 @@ class ItineraryGeographicPlannerTest {
                 titles(days.get(0)));
         assertEquals(List.of("B - North Coast", "D - Far site"),
                 titles(days.get(1)));
+    }
+
+    @Test
+    void keepsDifferentNamedAreasOnSeparateDaysEvenWhenCoordinatesAreClose() {
+        List<Map<String, Object>> candidates = List.of(
+                item("A - Stone Town", -6.1600, 39.1900, "STONE_TOWN"),
+                item("B - Nungwi", -6.1601, 39.1901, "NUNGWI")
+        );
+
+        List<List<Map<String, Object>>> days =
+                ItineraryGeographicPlanner.plan(candidates, 2, 3);
+
+        assertEquals(List.of("A - Stone Town"), titles(days.get(0)));
+        assertEquals(List.of("B - Nungwi"), titles(days.get(1)));
     }
 
     @Test
@@ -109,10 +123,16 @@ class ItineraryGeographicPlannerTest {
     }
 
     private static Map<String, Object> item(String title, Double latitude, Double longitude) {
+        return item(title, latitude, longitude, null);
+    }
+
+    private static Map<String, Object> item(
+            String title, Double latitude, Double longitude, String geographicArea) {
         Map<String, Object> item = new LinkedHashMap<>();
         item.put("title", title);
         item.put("latitude", latitude);
         item.put("longitude", longitude);
+        item.put("geographicArea", geographicArea);
         return item;
     }
 
