@@ -1,4 +1,4 @@
--- V5 catalog enrichment: additional Zanzibar attractions and activities.
+-- V8 catalog enrichment: additional Zanzibar attractions and activities.
 -- All entries are discovery suggestions only. No coordinates, prices, durations or opening hours
 -- are asserted without a dedicated verified source. Existing catalog rows are never overwritten.
 --
@@ -35,13 +35,6 @@ CROSS JOIN (VALUES
         'Hamamni Persian Baths',
         'HERITAGE',
         'Bains persans historiques de Stone Town. Accès actuel et conditions de visite à confirmer.',
-        'UNESCO Urban Heritage Atlas',
-        'https://whc.unesco.org/en/urban-heritage-atlas/stone-town'
-    ),
-    (
-        'Palace Museum (Beit al-Sahel)',
-        'MUSEUM',
-        'Ancien palais historique de Stone Town. Statut du musée, horaires et accès à vérifier avant toute visite.',
         'UNESCO Urban Heritage Atlas',
         'https://whc.unesco.org/en/urban-heritage-atlas/stone-town'
     ),
