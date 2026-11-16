@@ -17,11 +17,15 @@ public final class CatalogSourceTransparency {
         String dataStatus = value(item.get("dataStatus"), "UNVERIFIED");
 
         Map<String, Object> result = new LinkedHashMap<>();
+        result.put("sourceName", item.get("sourceName"));
+        result.put("sourceUrl", item.get("sourceUrl"));
         result.put("sourceType", sourceType);
         result.put("sourceTypeLabel", sourceTypeLabel(sourceType));
         result.put("sourceScope", sourceScope);
         result.put("sourceScopeLabel", sourceScopeLabel(sourceScope));
         result.put("verificationStatus", dataStatus);
+        result.put("verificationNotes", item.get("verificationNotes"));
+        result.put("lastVerifiedAt", item.get("lastVerifiedAt"));
         result.put("verified", "VERIFIED".equalsIgnoreCase(dataStatus));
         result.put("explanation", explanation(sourceType, sourceScope, dataStatus));
         result.put("limitations", limitations(sourceType, sourceScope));
