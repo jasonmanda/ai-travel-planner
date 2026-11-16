@@ -83,7 +83,9 @@ public class TravelCatalogController {
                        estimated_visit_cost AS "estimatedCost", cost_currency AS currency,
                        estimated_duration_minutes AS "estimatedDurationMinutes",
                        data_status AS "dataStatus", source_name AS "sourceName",
-                       source_url AS "sourceUrl", last_verified_at AS "lastVerifiedAt"
+                       source_url AS "sourceUrl", source_type AS "sourceType",
+                       source_scope AS "sourceScope", verification_notes AS "verificationNotes",
+                       last_verified_at AS "lastVerifiedAt"
                 FROM attractions WHERE city_id = ? AND active = TRUE ORDER BY name
                 """, cityId));
     }
@@ -96,7 +98,9 @@ public class TravelCatalogController {
                        act.estimated_cost AS "estimatedCost", act.cost_currency AS currency,
                        act.suitable_for_families AS "suitableForFamilies", act.min_age_years AS "minAgeYears",
                        act.data_status AS "dataStatus", act.source_name AS "sourceName",
-                       act.source_url AS "sourceUrl", act.last_verified_at AS "lastVerifiedAt",
+                       act.source_url AS "sourceUrl", act.source_type AS "sourceType",
+                       act.source_scope AS "sourceScope", act.verification_notes AS "verificationNotes",
+                       act.last_verified_at AS "lastVerifiedAt",
                        rel.canonical_item_type AS "duplicateOfType",
                        rel.canonical_item_id AS "duplicateOfId",
                        rel.relation_type AS "deduplicationRelation",
