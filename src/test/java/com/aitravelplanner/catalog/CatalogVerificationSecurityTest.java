@@ -22,7 +22,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(
-        controllers = CatalogVerificationController.class,
+        controllers = {CatalogVerificationController.class, CatalogVerificationHistoryController.class},
         properties = {
                 "APP_ADMIN_USERNAME=test-admin",
                 "APP_ADMIN_PASSWORD=test-password"
@@ -43,6 +43,7 @@ class CatalogVerificationSecurityTest {
 
     private static final String ENDPOINT =
             "/api/v1/admin/catalog/attractions/1/verifications";
+    private static final String HISTORY_ENDPOINT = ENDPOINT;
 
     private static final String VALID_BODY = """
             {
@@ -53,6 +54,32 @@ class CatalogVerificationSecurityTest {
               "verificationNotes": "Nom vérifié auprès de la source"
             }
             """;
+
+    @Test
+    void anonymousHistoryRequestIsUnauthorized() throws Exception {
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get(HISTORY_ENDPOINT))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void nonAdminCannotReadVerificationHistory() throws Exception {
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get(HISTORY_ENDPOINT)
+                        .with(user("ordinary-user").roles("USER")))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void adminCanReachVerificationHistoryEndpoint() throws Exception {
+        when(jdbcTemplate.queryForObject(
+                eq("SELECT COUNT(*) FROM attractions WHERE id = ?"),
+                eq(Long.class),
+                eq(1L)
+        )).thenReturn(0L);
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get(HISTORY_ENDPOINT)
+                        .with(httpBasic("test-admin", "test-password")))
+                .andExpect(status().isNotFound());
+    }
 
     @Test
     void anonymousRequestIsUnauthorized() throws Exception {
