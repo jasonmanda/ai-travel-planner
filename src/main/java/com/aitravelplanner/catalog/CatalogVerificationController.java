@@ -16,6 +16,8 @@ import org.springframework.jdbc.core.ConnectionCallback;
 import java.net.URI;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.Types;
+import java.math.BigDecimal;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -103,11 +105,38 @@ public class CatalogVerificationController {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Élément du catalogue introuvable");
         }
 
+        String priceColumn = itemTable.equals("attractions")
+                ? "estimated_visit_cost" : "estimated_cost";
+        boolean verifiesPrice = request.verificationStatus()
+                == CatalogVerificationRequest.VerificationStatus.VERIFIED
+                && fields.contains(priceColumn)
+                && fields.contains("cost_currency");
+
+        BigDecimal verifiedPrice = null;
+        String verifiedCurrency = null;
+        if (verifiesPrice) {
+            Map<String, Object> currentPrice = jdbc.queryForMap(
+                    "SELECT " + priceColumn + " AS price, cost_currency AS currency"
+                            + " FROM " + itemTable + " WHERE id = ? FOR SHARE",
+                    itemId
+            );
+            verifiedPrice = (BigDecimal) currentPrice.get("price");
+            verifiedCurrency = (String) currentPrice.get("currency");
+            if (verifiedPrice == null || verifiedCurrency == null || verifiedCurrency.isBlank()) {
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "Un tarif et une devise doivent être renseignés pour vérifier le prix"
+                );
+            }
+        }
+
         String sql = "INSERT INTO " + historyTable + " (" + foreignKey
                 + ", verification_status, verified_fields, source_name, source_url,"
-                + " verification_notes, verified_by) VALUES (?, ?, ?, ?, ?, ?, ?)"
-                + " RETURNING id, verified_at";
+                + " verification_notes, verified_by, verified_price, verified_currency)"
+                + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id, verified_at";
 
+        BigDecimal priceSnapshot = verifiedPrice;
+        String currencySnapshot = verifiedCurrency;
         Map<String, Object> saved = jdbc.execute((ConnectionCallback<Map<String, Object>>) connection -> {
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
                 statement.setLong(1, itemId);
@@ -117,6 +146,13 @@ public class CatalogVerificationController {
                 statement.setString(5, request.sourceUrl().trim());
                 statement.setString(6, request.verificationNotes().trim());
                 statement.setString(7, authentication.getName());
+                if (priceSnapshot == null) {
+                    statement.setNull(8, Types.NUMERIC);
+                    statement.setNull(9, Types.VARCHAR);
+                } else {
+                    statement.setBigDecimal(8, priceSnapshot);
+                    statement.setString(9, currencySnapshot);
+                }
 
                 try (ResultSet resultSet = statement.executeQuery()) {
                     if (!resultSet.next()) {
@@ -137,6 +173,8 @@ public class CatalogVerificationController {
         response.put("sourceName", request.sourceName().trim());
         response.put("sourceUrl", request.sourceUrl().trim());
         response.put("verifiedBy", authentication.getName());
+        response.put("verifiedPrice", verifiedPrice);
+        response.put("verifiedCurrency", verifiedCurrency);
         response.putAll(saved);
         response.put("message", "Vérification enregistrée dans l'historique");
         return response;
