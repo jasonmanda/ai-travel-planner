@@ -103,9 +103,17 @@ final class ItineraryGeographicPlanner {
     private static double minimumDistanceKm(
             List<Map<String, Object>> group, Map<String, Object> candidate) {
         return group.stream()
+                .filter(item -> compatibleAreas(item, candidate))
                 .mapToDouble(item -> distanceKm(item, candidate))
                 .min()
                 .orElse(Double.POSITIVE_INFINITY);
+    }
+
+    private static boolean compatibleAreas(Map<String, Object> first, Map<String, Object> second) {
+        Object firstArea = first.get("geographicArea");
+        Object secondArea = second.get("geographicArea");
+        return firstArea == null || secondArea == null
+                || String.valueOf(firstArea).equalsIgnoreCase(String.valueOf(secondArea));
     }
 
     private static boolean hasValidCoordinates(Map<String, Object> item) {
