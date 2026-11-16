@@ -122,6 +122,79 @@ class ItineraryGeographicPlannerTest {
                 () -> ItineraryGeographicPlanner.plan(List.of(), 2, 0));
     }
 
+    @Test
+    void neverMixesGeolocatedStoneTownWithUnlocatedPaje() {
+        List<Map<String, Object>> candidates = List.of(
+                item("Stone Town attraction", -6.1600, 39.1900, "STONE_TOWN"),
+                item("Paje activity", null, null, "PAJE")
+        );
+
+        List<List<Map<String, Object>>> days =
+                ItineraryGeographicPlanner.plan(candidates, 2, 3);
+
+        assertEquals(List.of("Stone Town attraction"), titles(days.get(0)));
+        assertEquals(List.of("Paje activity"), titles(days.get(1)));
+    }
+
+    @Test
+    void neverMixesUnlocatedStoneTownActivityWithGeolocatedJozani() {
+        List<Map<String, Object>> candidates = List.of(
+                item("Stone Town guided visit", null, null, "STONE_TOWN"),
+                item("Jozani Forest", -6.26755, 39.41111, "JOZANI")
+        );
+
+        List<List<Map<String, Object>>> days =
+                ItineraryGeographicPlanner.plan(candidates, 2, 3);
+
+        assertEquals(List.of("Jozani Forest"), titles(days.get(0)));
+        assertEquals(List.of("Stone Town guided visit"), titles(days.get(1)));
+    }
+
+    @Test
+    void neverMixesNungwiAndOffshoreWestOnTheSameDay() {
+        List<Map<String, Object>> candidates = List.of(
+                item("Nungwi Beach", -5.7259, 39.2986, "NUNGWI"),
+                item("Nakupenda Sandbank", null, null, "OFFSHORE_WEST")
+        );
+
+        List<List<Map<String, Object>>> days =
+                ItineraryGeographicPlanner.plan(candidates, 2, 3);
+
+        assertEquals(List.of("Nungwi Beach"), titles(days.get(0)));
+        assertEquals(List.of("Nakupenda Sandbank"), titles(days.get(1)));
+    }
+
+    @Test
+    void allowsSameAreaEntriesToShareDayWithinCapacity() {
+        List<Map<String, Object>> candidates = List.of(
+                item("Forodhani Gardens", -6.160680, 39.188616, "STONE_TOWN"),
+                item("Stone Town guided visit", null, null, "STONE_TOWN"),
+                item("Old Fort", -6.161390, 39.189170, "STONE_TOWN")
+        );
+
+        List<List<Map<String, Object>>> days =
+                ItineraryGeographicPlanner.plan(candidates, 1, 3);
+
+        assertEquals(3, days.getFirst().size());
+        assertEquals(Set.of("Forodhani Gardens", "Stone Town guided visit", "Old Fort"),
+                Set.copyOf(titles(days.getFirst())));
+    }
+
+    @Test
+    void keepsUnknownAreaEntriesSeparateFromNamedAreasAndOrdersThemDeterministically() {
+        List<Map<String, Object>> candidates = List.of(
+                item("Unknown B", null, null),
+                item("Stone Town", -6.1600, 39.1900, "STONE_TOWN"),
+                item("Unknown A", null, null)
+        );
+
+        List<List<Map<String, Object>>> days =
+                ItineraryGeographicPlanner.plan(candidates, 2, 3);
+
+        assertEquals(List.of("Stone Town"), titles(days.get(0)));
+        assertEquals(List.of("Unknown A", "Unknown B"), titles(days.get(1)));
+    }
+
     private static Map<String, Object> item(String title, Double latitude, Double longitude) {
         return item(title, latitude, longitude, null);
     }
