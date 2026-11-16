@@ -1,5 +1,6 @@
 package com.aitravelplanner.itinerary;
 
+import com.aitravelplanner.catalog.CatalogDataQuality;
 import com.aitravelplanner.catalog.CatalogDeduplication;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -86,7 +87,11 @@ public class ItineraryService {
                 : Arrays.stream(rawInterests.split(",")).map(String::trim)
                     .filter(value -> !value.isBlank()).toList();
         String travelStyle = (String) trip.get("travelStyle");
-        candidates.forEach(item -> ItineraryPreferenceScorer.apply(item, interests, travelStyle));
+        candidates.forEach(item -> {
+            ItineraryPreferenceScorer.apply(item, interests, travelStyle);
+            Map<String, Object> quality = CatalogDataQuality.assess(item);
+            item.put("documentationScore", quality.get("score"));
+        });
 
         // Re-generation replaces the previous itinerary for this trip/destination.
         jdbc.update("DELETE FROM itineraries WHERE trip_id = ? AND city_id = ?", tripId, destinationId);
@@ -173,6 +178,7 @@ public class ItineraryService {
                     FROM itinerary_items
                     WHERE day_id = ? ORDER BY sequence_number
                     """, day.get("id"));
+            items.forEach(item -> item.put("catalogQuality", CatalogDataQuality.assess(item)));
             day.put("items", items);
             day.put("dataQuality", ItineraryDataQuality.assessDay(items));
         }
@@ -182,7 +188,7 @@ public class ItineraryService {
         itinerary.put("estimateDisclaimer",
                 "Les montants sont des estimations indicatives lorsqu'ils sont renseignés. Les éléments UNVERIFIED ne sont pas des informations confirmées. Vérifiez les tarifs, horaires, disponibilités et conditions auprès des sources officielles.");
         itinerary.put("planningPolicy",
-                "Les suggestions sont classées selon la correspondance entre les catégories du catalogue, les centres d’intérêt et le style de voyage renseignés. Ce score mesure uniquement la pertinence déclarée, pas la qualité ni la vérification de l’expérience. La proximité géographique, les zones et les doublons restent prioritaires; aucune activité, aucun prix ni horaire n'est inventé.");
+                "Les suggestions sont classées d'abord selon la correspondance entre les catégories du catalogue, les centres d’intérêt et le style de voyage. À pertinence égale, les informations les mieux documentées sont prioritaires. La qualité documentaire ne garantit ni l'exactitude ni la qualité réelle de l'expérience. La proximité géographique, les zones et les doublons restent prioritaires; aucune activité, aucun prix ni horaire n'est inventé.");
         return itinerary;
     }
 }
