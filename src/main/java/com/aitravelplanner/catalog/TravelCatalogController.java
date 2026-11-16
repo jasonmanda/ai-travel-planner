@@ -121,6 +121,7 @@ public class TravelCatalogController {
         return items.stream().map(item -> {
             Map<String, Object> enriched = new LinkedHashMap<>(item);
             enriched.put("catalogQuality", CatalogDataQuality.assess(enriched));
+            enriched.put("sourceTransparency", CatalogSourceTransparency.describe(enriched));
             return enriched;
         }).toList();
     }
