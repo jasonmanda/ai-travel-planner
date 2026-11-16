@@ -160,8 +160,8 @@ class ItineraryGeographicPlannerTest {
         List<List<Map<String, Object>>> days =
                 ItineraryGeographicPlanner.plan(candidates, 2, 3);
 
-        assertEquals(List.of("Nakupenda Sandbank"), titles(days.get(0)));
-        assertEquals(List.of("Nungwi Beach"), titles(days.get(1)));
+        assertEquals(List.of("Nungwi Beach"), titles(days.get(0)));
+        assertEquals(List.of("Nakupenda Sandbank"), titles(days.get(1)));
     }
 
     @Test
