@@ -115,8 +115,9 @@ public class TravelCatalogController {
 
     private List<Map<String, Object>> withQuality(List<Map<String, Object>> items) {
         return items.stream().map(item -> {
-            item.put("catalogQuality", CatalogDataQuality.assess(item));
-            return item;
+            Map<String, Object> enriched = new LinkedHashMap<>(item);
+            enriched.put("catalogQuality", CatalogDataQuality.assess(enriched));
+            return enriched;
         }).toList();
     }
 
