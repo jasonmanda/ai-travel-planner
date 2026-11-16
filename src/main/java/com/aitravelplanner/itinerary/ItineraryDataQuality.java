@@ -1,5 +1,7 @@
 package com.aitravelplanner.itinerary;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -33,7 +35,7 @@ final class ItineraryDataQuality {
         Set<String> uniqueWarnings = new LinkedHashSet<>();
         for (Map<String, Object> item : items) {
             int itemScore = 0;
-            if (hasText(item.get("sourceUrl"))) {
+            if (isHttpUrl(item.get("sourceUrl"))) {
                 itemScore += SOURCE_WEIGHT;
             } else {
                 uniqueWarnings.add("SOURCE_MISSING");
@@ -112,6 +114,21 @@ final class ItineraryDataQuality {
         result.put("warnings", warnings);
         result.put("metric", "DATA_COMPLETENESS_NOT_EXPERIENCE_QUALITY");
         return result;
+    }
+
+    private static boolean isHttpUrl(Object value) {
+        if (!hasText(value)) {
+            return false;
+        }
+        try {
+            URI uri = new URI(String.valueOf(value).trim());
+            String scheme = uri.getScheme();
+            return uri.isAbsolute()
+                    && uri.getHost() != null
+                    && ("http".equalsIgnoreCase(scheme) || "https".equalsIgnoreCase(scheme));
+        } catch (URISyntaxException exception) {
+            return false;
+        }
     }
 
     private static boolean hasText(Object value) {
