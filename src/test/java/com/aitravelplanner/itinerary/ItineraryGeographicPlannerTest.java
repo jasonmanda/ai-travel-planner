@@ -223,6 +223,39 @@ class ItineraryGeographicPlannerTest {
         assertEquals(List.of("A - Unknown location"), titles(days.get(1)));
     }
 
+
+    @Test
+    void prefersBetterDocumentedGroupWhenPreferenceScoresAreEqual() {
+        Map<String, Object> wellDocumented = item("Well documented", -6.1600, 39.1900, "STONE_TOWN");
+        wellDocumented.put("preferenceScore", 100);
+        wellDocumented.put("documentationScore", 80);
+        Map<String, Object> poorlyDocumented = item("Poorly documented", -5.7259, 39.2986, "NUNGWI");
+        poorlyDocumented.put("preferenceScore", 100);
+        poorlyDocumented.put("documentationScore", 20);
+
+        List<List<Map<String, Object>>> days =
+                ItineraryGeographicPlanner.plan(List.of(poorlyDocumented, wellDocumented), 2, 3);
+
+        assertEquals(List.of("Well documented"), titles(days.getFirst()));
+        assertEquals(List.of("Poorly documented"), titles(days.get(1)));
+    }
+
+    @Test
+    void preferenceMatchRemainsMoreImportantThanDocumentationCompleteness() {
+        Map<String, Object> preferenceMatch = item("Preference match", -6.1600, 39.1900, "STONE_TOWN");
+        preferenceMatch.put("preferenceScore", 100);
+        preferenceMatch.put("documentationScore", 0);
+        Map<String, Object> documentationMatch = item("Documentation match", -5.7259, 39.2986, "NUNGWI");
+        documentationMatch.put("preferenceScore", 40);
+        documentationMatch.put("documentationScore", 100);
+
+        List<List<Map<String, Object>>> days =
+                ItineraryGeographicPlanner.plan(List.of(documentationMatch, preferenceMatch), 2, 3);
+
+        assertEquals(List.of("Preference match"), titles(days.getFirst()));
+        assertEquals(List.of("Documentation match"), titles(days.get(1)));
+    }
+
     private static Map<String, Object> item(String title, Double latitude, Double longitude) {
         return item(title, latitude, longitude, null);
     }
