@@ -1,5 +1,6 @@
 package com.aitravelplanner.itinerary;
 
+import com.aitravelplanner.catalog.CatalogDeduplication;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -42,24 +43,37 @@ public class ItineraryService {
         Map<String, Object> destination = destinations.getFirst();
         int durationDays = (Integer) trip.get("durationDays");
 
-        List<Map<String, Object>> candidates = jdbc.queryForList("""
+        List<Map<String, Object>> rawCandidates = jdbc.queryForList("""
                 SELECT id AS "catalogItemId", 'ATTRACTION' AS "itemType", name AS title,
                        description, latitude, longitude, geographic_area AS "geographicArea",
                        estimated_duration_minutes AS "estimatedDurationMinutes",
                        estimated_visit_cost AS "estimatedCost", cost_currency AS currency,
-                       data_status AS "dataStatus", source_name AS "sourceName", source_url AS "sourceUrl"
+                       data_status AS "dataStatus", source_name AS "sourceName", source_url AS "sourceUrl",
+                       NULL::VARCHAR AS "duplicateOfType", NULL::BIGINT AS "duplicateOfId",
+                       NULL::VARCHAR AS "deduplicationRelation"
                 FROM attractions
                 WHERE city_id = ? AND active = TRUE
                 UNION ALL
-                SELECT id AS "catalogItemId", 'ACTIVITY' AS "itemType", name AS title,
-                       description, latitude, longitude, geographic_area AS "geographicArea",
-                       estimated_duration_minutes AS "estimatedDurationMinutes",
-                       estimated_cost AS "estimatedCost", cost_currency AS currency,
-                       data_status AS "dataStatus", source_name AS "sourceName", source_url AS "sourceUrl"
-                FROM activities
-                WHERE city_id = ? AND active = TRUE
+                SELECT act.id AS "catalogItemId", 'ACTIVITY' AS "itemType", act.name AS title,
+                       act.description, act.latitude, act.longitude,
+                       act.geographic_area AS "geographicArea",
+                       act.estimated_duration_minutes AS "estimatedDurationMinutes",
+                       act.estimated_cost AS "estimatedCost", act.cost_currency AS currency,
+                       act.data_status AS "dataStatus", act.source_name AS "sourceName", act.source_url AS "sourceUrl",
+                       rel.canonical_item_type AS "duplicateOfType",
+                       rel.canonical_item_id AS "duplicateOfId",
+                       rel.relation_type AS "deduplicationRelation"
+                FROM activities act
+                LEFT JOIN catalog_item_relations rel
+                  ON rel.city_id = act.city_id
+                 AND rel.duplicate_item_type = 'ACTIVITY'
+                 AND rel.duplicate_item_id = act.id
+                 AND rel.relation_type = 'SAME_EXPERIENCE'
+                WHERE act.city_id = ? AND act.active = TRUE
                 ORDER BY title
                 """, destinationId, destinationId);
+        List<Map<String, Object>> candidates =
+                CatalogDeduplication.removeSemanticDuplicates(rawCandidates);
 
         // Re-generation replaces the previous itinerary for this trip/destination.
         jdbc.update("DELETE FROM itineraries WHERE trip_id = ? AND city_id = ?", tripId, destinationId);
@@ -149,7 +163,7 @@ public class ItineraryService {
         itinerary.put("estimateDisclaimer",
                 "Les montants sont des estimations indicatives lorsqu'ils sont renseignés. Les éléments UNVERIFIED ne sont pas des informations confirmées. Vérifiez les tarifs, horaires, disponibilités et conditions auprès des sources officielles.");
         itinerary.put("planningPolicy",
-                "Le programme est construit à partir du catalogue disponible. Aucune activité, aucun prix ni horaire n'est inventé; les journées sans données restent à compléter.");
+                "Le programme est construit à partir du catalogue disponible. Aucune activité, aucun prix ni horaire n'est inventé; les journées sans données restent à compléter. Les doublons explicitement identifiés sont écartés lorsque leur entrée canonique est présente.");
         return itinerary;
     }
 }
