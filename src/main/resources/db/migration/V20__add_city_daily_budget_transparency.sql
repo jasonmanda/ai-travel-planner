@@ -9,6 +9,10 @@ ALTER TABLE cities
     ADD COLUMN estimated_daily_budget_verified_at TIMESTAMPTZ,
     ADD COLUMN estimated_daily_budget_notes VARCHAR(1000);
 
+-- Recommendations may legitimately have no numeric estimate when a city budget is UNKNOWN.
+ALTER TABLE trip_recommendations
+    ALTER COLUMN estimated_trip_budget DROP NOT NULL;
+
 -- UNKNOWN means that no numeric estimate/currency is available.
 ALTER TABLE cities
     ALTER COLUMN estimated_daily_budget DROP NOT NULL,
