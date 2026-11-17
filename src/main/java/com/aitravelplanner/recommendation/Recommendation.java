@@ -21,7 +21,7 @@ public class Recommendation {
     private City city;
     @Column(nullable = false)
     private Integer score;
-    @Column(name = "estimated_trip_budget", nullable = false, precision = 14, scale = 2)
+    @Column(name = "estimated_trip_budget", precision = 14, scale = 2)
     private BigDecimal estimatedTripBudget;
     @Column(name = "budget_status", nullable = false, length = 30)
     private String budgetStatus;
@@ -43,35 +43,12 @@ public class Recommendation {
         this.generatedAt = Instant.now();
     }
 
-    public Long getId() {
-        return id;
-    }
-
-    public TripRequest getTrip() {
-        return trip;
-    }
-
-    public City getCity() {
-        return city;
-    }
-
-    public Integer getScore() {
-        return score;
-    }
-
-    public BigDecimal getEstimatedTripBudget() {
-        return estimatedTripBudget;
-    }
-
-    public String getBudgetStatus() {
-        return budgetStatus;
-    }
-
-    public String getExplanation() {
-        return explanation;
-    }
-
-    public Instant getGeneratedAt() {
-        return generatedAt;
-    }
+    public Long getId() { return id; }
+    public TripRequest getTrip() { return trip; }
+    public City getCity() { return city; }
+    public Integer getScore() { return score; }
+    public BigDecimal getEstimatedTripBudget() { return estimatedTripBudget; }
+    public String getBudgetStatus() { return budgetStatus; }
+    public String getExplanation() { return explanation; }
+    public Instant getGeneratedAt() { return generatedAt; }
 }
