@@ -217,6 +217,37 @@ class CatalogSourceTransparencyTest {
     }
 
 
+    @Test
+    void officialTanzanianHighCommissionBeachReferenceIsItemSpecificButNotVerification() {
+        Map<String, Object> item = item("UNVERIFIED");
+        item.put("sourceName",
+                "Tanzania High Commission in the United Kingdom - Zanzibar Tropical Paradise in Africa");
+        item.put("sourceUrl",
+                "https://www.uk.tzembassy.go.tz/news/view/zanzibar-tropical-paradise-in-africa");
+
+        Map<String, Object> transparency = CatalogSourceTransparency.describe(item);
+
+        assertEquals("ITEM_SPECIFIC_PRIMARY_CANDIDATE", transparency.get("sourceQuality"));
+        assertEquals("UNVERIFIED", transparency.get("verificationStatus"));
+        assertFalse((Boolean) transparency.get("verified"));
+        assertFalse((Boolean) transparency.get("sourceSupportsRecommendation"));
+    }
+
+    @Test
+    void nakupendaProviderPageIsOperatorPrimaryNotIndependentOfficialEvidence() {
+        Map<String, Object> item = item("UNVERIFIED");
+        item.put("sourceName", "Sea Star Fish Zanzibar - Nakupenda Trip (operator description)");
+        item.put("sourceType", "OPERATOR_PRIMARY");
+        item.put("sourceUrl", "https://seastarfish.co.tz/nakupenda");
+
+        Map<String, Object> transparency = CatalogSourceTransparency.describe(item);
+
+        assertEquals("OPERATOR_PRIMARY_CANDIDATE", transparency.get("sourceQuality"));
+        assertEquals("UNVERIFIED", transparency.get("verificationStatus"));
+        assertFalse((Boolean) transparency.get("verified"));
+        assertFalse((Boolean) transparency.get("sourceSupportsRecommendation"));
+    }
+
     private static Map<String, Object> item(String status) {
         Map<String, Object> item = new LinkedHashMap<>();
         item.put("sourceName", "Portail touristique");
