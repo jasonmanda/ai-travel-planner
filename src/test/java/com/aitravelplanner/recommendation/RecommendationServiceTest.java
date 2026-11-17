@@ -65,7 +65,8 @@ class RecommendationServiceTest {
     @Test
     void indicativeBudgetsAreDisplayedButDoNotInfluenceRecommendationScore() {
         UUID tripId = UUID.randomUUID();
-        when(trips.findById(tripId)).thenReturn(Optional.of(mockTrip()));
+        TripRequest trip = mockTrip();
+        when(trips.findById(tripId)).thenReturn(Optional.of(trip));
         City cheap = mockCity("INDICATIVE", "100");
         City expensive = mockCity("INDICATIVE", "900000");
         when(cities.findAllByOrderByNameAsc()).thenReturn(List.of(cheap, expensive));
@@ -84,7 +85,8 @@ class RecommendationServiceTest {
     @Test
     void verifiedComparableBudgetCanInfluenceRecommendationScore() {
         UUID tripId = UUID.randomUUID();
-        when(trips.findById(tripId)).thenReturn(Optional.of(mockTrip()));
+        TripRequest trip = mockTrip();
+        when(trips.findById(tripId)).thenReturn(Optional.of(trip));
         City verified = mockCity("VERIFIED", "100");
         when(verified.getEstimatedDailyBudgetVerifiedAt()).thenReturn(java.time.Instant.parse("2026-01-01T00:00:00Z"));
         when(verified.getEstimatedDailyBudgetSourceName()).thenReturn("Official source");
@@ -101,7 +103,8 @@ class RecommendationServiceTest {
     @Test
     void unknownBudgetDoesNotCreateAnArtificialZeroEstimate() {
         UUID tripId = UUID.randomUUID();
-        when(trips.findById(tripId)).thenReturn(Optional.of(mockTrip()));
+        TripRequest trip = mockTrip();
+        when(trips.findById(tripId)).thenReturn(Optional.of(trip));
         City unknown = mockCity("UNKNOWN", null);
         when(unknown.getEstimatedDailyBudgetCurrency()).thenReturn(null);
         when(cities.findAllByOrderByNameAsc()).thenReturn(List.of(unknown));
