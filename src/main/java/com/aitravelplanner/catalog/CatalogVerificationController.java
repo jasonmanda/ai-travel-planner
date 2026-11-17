@@ -83,6 +83,16 @@ public class CatalogVerificationController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Identifiant invalide");
         }
 
+        if (request.verifiedFields() == null
+                || request.verifiedFields().isEmpty()
+                || request.verifiedFields().stream()
+                .anyMatch(field -> field == null || field.isBlank())) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Au moins un champ vérifié doit être renseigné"
+            );
+        }
+
         List<String> fields = request.verifiedFields().stream()
                 .map(String::trim)
                 .toList();
