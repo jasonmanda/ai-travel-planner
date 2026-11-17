@@ -230,7 +230,7 @@ public final class CatalogSourceTransparency {
                     || normalizedPath.equals("/document/218167");
         }
         if ("bot.go.tz".equals(normalizedHost)) {
-            return normalizedizedContains(normalizedPath, "tanzania tourism sector survey");
+            return normalizedPathContains(normalizedPath, "tanzania tourism sector survey");
         }
         if ("sanparks.org".equals(normalizedHost)) {
             return normalizedPath.equals("/parks/table-mountain");
@@ -244,7 +244,7 @@ public final class CatalogSourceTransparency {
         return false;
     }
 
-    private static boolean normalizedizedContains(String value, String phrase) {
+    private static boolean normalizedPathContains(String value, String phrase) {
         return value.replace("%20", " ").contains(phrase);
     }
 
