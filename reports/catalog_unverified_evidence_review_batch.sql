@@ -20,7 +20,7 @@ BEGIN;
 
 -- Fail before changing anything if the reviewed snapshot no longer matches.
 -- This keeps the six corrections all-or-nothing.
-DO $
+DO $$
 DECLARE
     v_count INTEGER;
 BEGIN
@@ -78,7 +78,7 @@ BEGIN
        AND a.id = 15 AND a.name = 'Paje Beach'
        AND a.source_url = 'https://bot.go.tz/Publications/Other/Tanzania%20Tourism%20Sector%20Survey%20Report/en/2025082910055206.pdf';
     IF v_count <> 1 THEN RAISE EXCEPTION 'Precondition failed: Paje Beach attraction 15'; END IF;
-END $;
+END $$;
 
 -- 1. V&A Waterfront activity: use the official curated itinerary/attractions page.
 UPDATE activities act
