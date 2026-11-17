@@ -160,4 +160,26 @@ class CatalogSourceQualityTest {
         assertFalse((Boolean) result.get("sourceSupportsRecommendation"));
         assertFalse((Boolean) result.get("verified"));
     }
+    @Test
+    void officialIndexScriptAndHomePagesCannotBeClassifiedAsItemSpecificEvidence() {
+        for (String url : new String[] {
+                "https://maliasilismz.go.tz/index.php",
+                "https://example.org/index.html",
+                "https://example.org/default.aspx",
+                "https://example.org/home"
+        }) {
+            Map<String, Object> result = CatalogSourceTransparency.describe(Map.of(
+                    "sourceName", "Official tourism portal",
+                    "sourceUrl", url,
+                    "sourceType", "OFFICIAL",
+                    "sourceScope", "ITEM_SPECIFIC",
+                    "dataStatus", "UNVERIFIED"
+            ));
+
+            assertEquals("SOURCE_REQUIRES_REVIEW", result.get("sourceQuality"), url);
+            assertFalse((Boolean) result.get("sourceSupportsRecommendation"), url);
+            assertTrue(String.valueOf(result.get("sourceQualityReason")).contains("page d’accueil"), url);
+        }
+    }
+
 }
