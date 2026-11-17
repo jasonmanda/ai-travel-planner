@@ -64,7 +64,7 @@ class CatalogSourceQualityTest {
                 "dataStatus", "UNVERIFIED"
         ));
 
-        assertEquals("ITEM_SPECIFIC_PRIMARY", result.get("sourceQuality"));
+        assertEquals("ITEM_SPECIFIC_PRIMARY_CANDIDATE", result.get("sourceQuality"));
         assertFalse((Boolean) result.get("verified"));
         assertEquals("DOCUMENTED_UNVERIFIED", result.get("verificationLevel"));
     }
