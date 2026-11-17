@@ -198,6 +198,11 @@ public final class CatalogSourceTransparency {
             if (path == null || path.isBlank() || "/".equals(path)) {
                 return false;
             }
+            // Scripted index and default documents are still institutional homepages,
+            // not item-specific evidence, even when their path is not just "/".
+            if (isOfficialHomepage(sourceUrl)) {
+                return false;
+            }
             String normalizedPath = path.replaceAll("/+$", "");
             if (isKnownGeneralOfficialReference(uri.getHost(), normalizedPath)) {
                 return false;
