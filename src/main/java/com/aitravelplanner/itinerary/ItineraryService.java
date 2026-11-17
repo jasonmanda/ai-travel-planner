@@ -59,10 +59,30 @@ public class ItineraryService {
                        data_status AS "dataStatus", source_name AS "sourceName", source_url AS "sourceUrl",
                        source_type AS "sourceType", source_scope AS "sourceScope",
                        verification_notes AS "verificationNotes", last_verified_at AS "lastVerifiedAt",
+                       CASE
+                           WHEN a.estimated_visit_cost IS NULL THEN 'NOT_AVAILABLE'
+                           WHEN pv.verification_status = 'VERIFIED'
+                             AND pv.verified_fields @> ARRAY['estimated_visit_cost', 'cost_currency']::TEXT[]
+                             AND pv.verified_price = a.estimated_visit_cost
+                             AND pv.verified_currency = a.cost_currency THEN 'VERIFIED'
+                           ELSE 'ESTIMATED'
+                       END AS "priceVerificationStatus",
+                       pv.verified_at AS "priceVerifiedAt",
+                       pv.source_name AS "priceVerificationSourceName",
+                       pv.source_url AS "priceVerificationSourceUrl",
                        NULL::VARCHAR AS "duplicateOfType", NULL::BIGINT AS "duplicateOfId",
                        NULL::VARCHAR AS "deduplicationRelation"
-                FROM attractions
-                WHERE city_id = ? AND active = TRUE AND data_status <> 'REJECTED'
+                FROM attractions a
+                LEFT JOIN LATERAL (
+                    SELECT h.verification_status, h.verified_fields, h.verified_price,
+                           h.verified_currency, h.verified_at, h.source_name, h.source_url
+                    FROM attraction_verification_history h
+                    WHERE h.attraction_id = a.id
+                      AND h.verified_fields && ARRAY['estimated_visit_cost', 'cost_currency']::TEXT[]
+                    ORDER BY h.verified_at DESC, h.id DESC
+                    LIMIT 1
+                ) pv ON TRUE
+                WHERE a.city_id = ? AND a.active = TRUE AND a.data_status <> 'REJECTED'
                 UNION ALL
                 SELECT act.id AS "catalogItemId", 'ACTIVITY' AS "itemType", act.name AS title,
                        act.category, act.description, act.latitude, act.longitude,
@@ -72,10 +92,30 @@ public class ItineraryService {
                        act.data_status AS "dataStatus", act.source_name AS "sourceName", act.source_url AS "sourceUrl",
                        act.source_type AS "sourceType", act.source_scope AS "sourceScope",
                        act.verification_notes AS "verificationNotes", act.last_verified_at AS "lastVerifiedAt",
+                       CASE
+                           WHEN act.estimated_cost IS NULL THEN 'NOT_AVAILABLE'
+                           WHEN pv.verification_status = 'VERIFIED'
+                             AND pv.verified_fields @> ARRAY['estimated_cost', 'cost_currency']::TEXT[]
+                             AND pv.verified_price = act.estimated_cost
+                             AND pv.verified_currency = act.cost_currency THEN 'VERIFIED'
+                           ELSE 'ESTIMATED'
+                       END AS "priceVerificationStatus",
+                       pv.verified_at AS "priceVerifiedAt",
+                       pv.source_name AS "priceVerificationSourceName",
+                       pv.source_url AS "priceVerificationSourceUrl",
                        rel.canonical_item_type AS "duplicateOfType",
                        rel.canonical_item_id AS "duplicateOfId",
                        rel.relation_type AS "deduplicationRelation"
                 FROM activities act
+                LEFT JOIN LATERAL (
+                    SELECT h.verification_status, h.verified_fields, h.verified_price,
+                           h.verified_currency, h.verified_at, h.source_name, h.source_url
+                    FROM activity_verification_history h
+                    WHERE h.activity_id = act.id
+                      AND h.verified_fields && ARRAY['estimated_cost', 'cost_currency']::TEXT[]
+                    ORDER BY h.verified_at DESC, h.id DESC
+                    LIMIT 1
+                ) pv ON TRUE
                 LEFT JOIN catalog_item_relations rel
                   ON rel.city_id = act.city_id
                  AND rel.duplicate_item_type = 'ACTIVITY'
@@ -131,8 +171,10 @@ public class ItineraryService {
                             estimated_duration_minutes, estimated_cost, currency_code, data_status,
                             source_name, source_url, source_type, source_scope,
                             verification_notes, last_verified_at,
+                            price_verification_status, price_verified_at,
+                            price_verification_source_name, price_verification_source_url,
                             latitude, longitude, geographic_area, preference_score, preference_reason
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """,
                         dayId, sequence++, item.get("itemType"), item.get("catalogItemId"),
                         item.get("title"), item.get("description"), item.get("estimatedDurationMinutes"),
@@ -140,6 +182,8 @@ public class ItineraryService {
                         item.get("sourceName"), item.get("sourceUrl"),
                         item.get("sourceType"), item.get("sourceScope"),
                         item.get("verificationNotes"), item.get("lastVerifiedAt"),
+                        item.get("priceVerificationStatus"), item.get("priceVerifiedAt"),
+                        item.get("priceVerificationSourceName"), item.get("priceVerificationSourceUrl"),
                         item.get("latitude"), item.get("longitude"), item.get("geographicArea"),
                         item.get("preferenceScore"), item.get("preferenceReason"));
             }
@@ -181,7 +225,12 @@ public class ItineraryService {
                            data_status AS "dataStatus", source_name AS "sourceName",
                            source_url AS "sourceUrl", source_type AS "sourceType",
                            source_scope AS "sourceScope", verification_notes AS "verificationNotes",
-                           last_verified_at AS "lastVerifiedAt", latitude, longitude,
+                           last_verified_at AS "lastVerifiedAt",
+                           price_verification_status AS "priceVerificationStatus",
+                           price_verified_at AS "priceVerifiedAt",
+                           price_verification_source_name AS "priceVerificationSourceName",
+                           price_verification_source_url AS "priceVerificationSourceUrl",
+                           latitude, longitude,
                            geographic_area AS "geographicArea",
                            preference_score AS "preferenceScore",
                            preference_reason AS "preferenceReason"

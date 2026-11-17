@@ -85,8 +85,29 @@ public class TravelCatalogController {
                        data_status AS "dataStatus", source_name AS "sourceName",
                        source_url AS "sourceUrl", source_type AS "sourceType",
                        source_scope AS "sourceScope", verification_notes AS "verificationNotes",
-                       last_verified_at AS "lastVerifiedAt"
-                FROM attractions WHERE city_id = ? AND active = TRUE ORDER BY name
+                       last_verified_at AS "lastVerifiedAt",
+                       CASE
+                           WHEN a.estimated_visit_cost IS NULL THEN 'NOT_AVAILABLE'
+                           WHEN pv.verification_status = 'VERIFIED'
+                             AND pv.verified_fields @> ARRAY['estimated_visit_cost', 'cost_currency']::TEXT[]
+                             AND pv.verified_price = a.estimated_visit_cost
+                             AND pv.verified_currency = a.cost_currency THEN 'VERIFIED'
+                           ELSE 'ESTIMATED'
+                       END AS "priceVerificationStatus",
+                       pv.verified_at AS "priceVerifiedAt",
+                       pv.source_name AS "priceVerificationSourceName",
+                       pv.source_url AS "priceVerificationSourceUrl"
+                FROM attractions a
+                LEFT JOIN LATERAL (
+                    SELECT h.verification_status, h.verified_fields, h.verified_price,
+                           h.verified_currency, h.verified_at, h.source_name, h.source_url
+                    FROM attraction_verification_history h
+                    WHERE h.attraction_id = a.id
+                      AND h.verified_fields && ARRAY['estimated_visit_cost', 'cost_currency']::TEXT[]
+                    ORDER BY h.verified_at DESC, h.id DESC
+                    LIMIT 1
+                ) pv ON TRUE
+                WHERE a.city_id = ? AND a.active = TRUE ORDER BY a.name
                 """, cityId));
     }
 
@@ -105,8 +126,28 @@ public class TravelCatalogController {
                        rel.canonical_item_id AS "duplicateOfId",
                        rel.relation_type AS "deduplicationRelation",
                        rel.reason AS "deduplicationReason",
-                       rel.confidence AS "deduplicationConfidence"
+                       rel.confidence AS "deduplicationConfidence",
+                       CASE
+                           WHEN act.estimated_cost IS NULL THEN 'NOT_AVAILABLE'
+                           WHEN pv.verification_status = 'VERIFIED'
+                             AND pv.verified_fields @> ARRAY['estimated_cost', 'cost_currency']::TEXT[]
+                             AND pv.verified_price = act.estimated_cost
+                             AND pv.verified_currency = act.cost_currency THEN 'VERIFIED'
+                           ELSE 'ESTIMATED'
+                       END AS "priceVerificationStatus",
+                       pv.verified_at AS "priceVerifiedAt",
+                       pv.source_name AS "priceVerificationSourceName",
+                       pv.source_url AS "priceVerificationSourceUrl"
                 FROM activities act
+                LEFT JOIN LATERAL (
+                    SELECT h.verification_status, h.verified_fields, h.verified_price,
+                           h.verified_currency, h.verified_at, h.source_name, h.source_url
+                    FROM activity_verification_history h
+                    WHERE h.activity_id = act.id
+                      AND h.verified_fields && ARRAY['estimated_cost', 'cost_currency']::TEXT[]
+                    ORDER BY h.verified_at DESC, h.id DESC
+                    LIMIT 1
+                ) pv ON TRUE
                 LEFT JOIN catalog_item_relations rel
                   ON rel.city_id = act.city_id
                  AND rel.duplicate_item_type = 'ACTIVITY'
@@ -131,7 +172,9 @@ public class TravelCatalogController {
                 SELECT component_key AS "componentKey", label, estimated_amount AS "estimatedAmount",
                        currency_code AS currency, pricing_basis AS "pricingBasis",
                        data_status AS "dataStatus", source_name AS "sourceName",
-                       source_url AS "sourceUrl", last_verified_at AS "lastVerifiedAt"
+                       source_url AS "sourceUrl", last_verified_at AS "lastVerifiedAt",
+                       CASE WHEN estimated_amount IS NULL THEN 'NOT_AVAILABLE'
+                            ELSE 'ESTIMATED' END AS "priceVerificationStatus"
                 FROM city_budget_components WHERE city_id = ? ORDER BY component_key
                 """, cityId);
     }
