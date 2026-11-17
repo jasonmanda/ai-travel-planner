@@ -40,31 +40,27 @@ BEGIN
             'Expected exactly one unverified Forodhani activity with the reviewed source; found %',
             v_count;
     END IF;
-END $$;
 
-UPDATE activities act
-   SET source_name = 'Zanzibar House of Representatives - Budget Committee Report 2022/2023 (Forodhani assessment)',
-       source_type = 'OFFICIAL',
-       source_scope = 'ITEM_SPECIFIC',
-       verification_notes = 'Le rapport officiel de la Commission du Budget de la Baraza la Wawakilishi de Zanzibar (février 2023), pages 77–78, comporte une section consacrée aux commerces et services de la zone de Forodhani pendant l’exercice 2021/2022. Il indique que les jardins sont particulièrement animés en soirée, lorsque de nombreux vendeurs s’y rassemblent pour offrir des services aux habitants et aux visiteurs. Cette preuve institutionnelle et spécifique soutient l’existence d’une activité commerciale en soirée à Forodhani, mais elle est historique : elle ne confirme pas les horaires actuels, la présence quotidienne des vendeurs, les produits proposés aujourd’hui, les prix, l’hygiène alimentaire ni les conditions de visite à la date du voyage. La fiche reste UNVERIFIED.'
-  FROM cities c
-  JOIN countries co ON co.id = c.country_id
- WHERE act.city_id = c.id
-   AND co.iso_code = 'TZ'
-   AND c.name = 'Zanzibar'
-   AND act.id = 11
-   AND act.name = 'Découverte du marché nocturne de Forodhani'
-   AND act.source_url = 'https://zanzibarassembly.go.tz/storage/documents/Committees/all/1677484498.pdf'
-   AND act.data_status = 'UNVERIFIED';
+    UPDATE activities act
+       SET source_name = 'Zanzibar House of Representatives - Budget Committee Report 2022/2023 (Forodhani assessment)',
+           source_type = 'OFFICIAL',
+           source_scope = 'ITEM_SPECIFIC',
+           verification_notes = 'Le rapport officiel de la Commission du Budget de la Baraza la Wawakilishi de Zanzibar (février 2023), pages 77–78, comporte une section consacrée aux commerces et services de la zone de Forodhani pendant l’exercice 2021/2022. Il indique que les jardins sont particulièrement animés en soirée, lorsque de nombreux vendeurs s’y rassemblent pour offrir des services aux habitants et aux visiteurs. Cette preuve institutionnelle et spécifique soutient l’existence d’une activité commerciale en soirée à Forodhani, mais elle est historique : elle ne confirme pas les horaires actuels, la présence quotidienne des vendeurs, les produits proposés aujourd’hui, les prix, l’hygiène alimentaire ni les conditions de visite à la date du voyage. La fiche reste UNVERIFIED.'
+      FROM cities c
+      JOIN countries co ON co.id = c.country_id
+     WHERE act.city_id = c.id
+       AND co.iso_code = 'TZ'
+       AND c.name = 'Zanzibar'
+       AND act.id = 11
+       AND act.name = 'Découverte du marché nocturne de Forodhani'
+       AND act.source_url = 'https://zanzibarassembly.go.tz/storage/documents/Committees/all/1677484498.pdf'
+       AND act.data_status = 'UNVERIFIED';
 
-DO $$
-DECLARE
-    v_count INTEGER;
-BEGIN
     GET DIAGNOSTICS v_count = ROW_COUNT;
-    -- ROW_COUNT inside this block is local to the block; final state is checked below.
+    IF v_count <> 1 THEN
+        RAISE EXCEPTION 'Expected one Forodhani provenance update; got %', v_count;
+    END IF;
 END $$;
-
 COMMIT;
 
 -- Read-only post-run check. Expected: exactly one row, still UNVERIFIED.
