@@ -195,13 +195,17 @@ public final class CatalogSourceTransparency {
             if (path == null || path.isBlank() || "/".equals(path)) {
                 return false;
             }
-            Set<String> generalPathSegments = Set.of(
+            String normalizedPath = path.replaceAll("/+$", "");
+            String finalSegment = normalizedPath.substring(normalizedPath.lastIndexOf('/') + 1)
+                    .toLowerCase(Locale.ROOT);
+            Set<String> generalFinalSegments = Set.of(
                     "attractions", "visitor-information", "useful-information",
                     "visitor-tips", "patrimoine-materiel-national", "standards-catalogue"
             );
-            return java.util.Arrays.stream(path.toLowerCase(Locale.ROOT).split("/"))
-                    .filter(segment -> !segment.isBlank())
-                    .noneMatch(generalPathSegments::contains);
+            // A nested page under a general section (for example /attractions/plan-your-day)
+            // can still be item-specific. Reject only when the URL itself ends at a known
+            // generic directory/information page.
+            return !generalFinalSegments.contains(finalSegment);
         } catch (java.net.URISyntaxException exception) {
             return false;
         }

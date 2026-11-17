@@ -130,4 +130,34 @@ class CatalogSourceQualityTest {
         assertTrue(String.valueOf(result.get("sourceQualityReason")).contains("page générale"));
     }
 
+
+    @Test
+    void officialSpecificPageNestedUnderGenericAttractionsSectionIsAccepted() {
+        Map<String, Object> result = CatalogSourceTransparency.describe(Map.of(
+                "sourceName", "V&A Waterfront - Plan Your Day",
+                "sourceUrl", "https://www.waterfront.co.za/attractions/plan-your-day",
+                "sourceType", "OFFICIAL",
+                "sourceScope", "ITEM_SPECIFIC",
+                "dataStatus", "UNVERIFIED"
+        ));
+
+        assertEquals("ITEM_SPECIFIC_PRIMARY_CANDIDATE", result.get("sourceQuality"));
+        assertFalse((Boolean) result.get("sourceSupportsRecommendation"));
+        assertFalse((Boolean) result.get("verified"));
+    }
+
+    @Test
+    void genericAttractionsIndexRemainsUnderReview() {
+        Map<String, Object> result = CatalogSourceTransparency.describe(Map.of(
+                "sourceName", "V&A Waterfront attractions directory",
+                "sourceUrl", "https://www.waterfront.co.za/attractions",
+                "sourceType", "OFFICIAL",
+                "sourceScope", "ITEM_SPECIFIC",
+                "dataStatus", "UNVERIFIED"
+        ));
+
+        assertEquals("SOURCE_REQUIRES_REVIEW", result.get("sourceQuality"));
+        assertFalse((Boolean) result.get("sourceSupportsRecommendation"));
+        assertFalse((Boolean) result.get("verified"));
+    }
 }
