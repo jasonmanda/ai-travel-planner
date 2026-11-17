@@ -21,20 +21,20 @@ class TravelCatalogControllerTest {
         JdbcTemplate jdbc = mock(JdbcTemplate.class);
         when(jdbc.queryForList(anyString(), any(Object[].class)))
                 .thenReturn(List.of(Map.of("id", 1L)))
-                .thenReturn(List.of(Map.of(
-                        "id", 7L,
-                        "name", "Excursion dans la forêt de Jozani",
-                        "latitude", -6.26755,
-                        "longitude", 39.41111,
-                        "geographicArea", "JOZANI",
-                        "sourceName", "AntWeb",
-                        "sourceUrl", "https://www.antweb.org/locality.do?code=CEPF-TZ-10",
-                        "sourceType", "SCIENTIFIC",
-                        "sourceScope", "ITEM_SPECIFIC",
-                        "dataStatus", "UNVERIFIED",
-                        "duplicateOfType", "ATTRACTION",
-                        "duplicateOfId", 12L,
-                        "deduplicationRelation", "SAME_EXPERIENCE"
+                .thenReturn(List.of(Map.ofEntries(
+                        Map.entry("id", 7L),
+                        Map.entry("name", "Excursion dans la forêt de Jozani"),
+                        Map.entry("latitude", -6.26755),
+                        Map.entry("longitude", 39.41111),
+                        Map.entry("geographicArea", "JOZANI"),
+                        Map.entry("sourceName", "AntWeb"),
+                        Map.entry("sourceUrl", "https://www.antweb.org/locality.do?code=CEPF-TZ-10"),
+                        Map.entry("sourceType", "SCIENTIFIC"),
+                        Map.entry("sourceScope", "ITEM_SPECIFIC"),
+                        Map.entry("dataStatus", "UNVERIFIED"),
+                        Map.entry("duplicateOfType", "ATTRACTION"),
+                        Map.entry("duplicateOfId", 12L),
+                        Map.entry("deduplicationRelation", "SAME_EXPERIENCE")
                 )));
 
         TravelCatalogController controller = new TravelCatalogController(jdbc);
