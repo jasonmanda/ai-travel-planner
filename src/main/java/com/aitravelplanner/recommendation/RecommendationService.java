@@ -127,8 +127,8 @@ public class RecommendationService {
             item.put("estimateBasis", hasEstimate
                     ? "Budget journalier catalogue × durée × nombre de voyageurs"
                     : null);
-            item.put("estimateLimitations", city.getEstimatedDailyBudgetNotes() != null
-                    ? city.getEstimatedDailyBudgetNotes()
+            item.put("estimateLimitations", saved.getBudgetEstimateNotes() != null
+                    ? saved.getBudgetEstimateNotes()
                     : "Le périmètre des dépenses incluses n'est pas documenté; vols, hébergement, repas, activités et formalités doivent être vérifiés séparément.");
             item.put("notEvaluatedCriteria", List.of("nationality_and_entry_formalities", "travel_period_and_seasonality", "departure_transport_cost", "destination_scope"));
             item.put("latitude", city.getLatitude());
