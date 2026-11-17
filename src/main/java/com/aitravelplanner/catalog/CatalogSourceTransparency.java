@@ -198,6 +198,11 @@ public final class CatalogSourceTransparency {
             if (path == null || path.isBlank() || "/".equals(path)) {
                 return false;
             }
+            // Scripted index and default documents are still institutional homepages,
+            // not item-specific evidence, even when their path is not just "/".
+            if (isOfficialHomepage(sourceUrl)) {
+                return false;
+            }
             String normalizedPath = path.replaceAll("/+$", "");
             if (isKnownGeneralOfficialReference(uri.getHost(), normalizedPath)) {
                 return false;
@@ -254,7 +259,14 @@ public final class CatalogSourceTransparency {
         try {
             java.net.URI uri = new java.net.URI(String.valueOf(sourceUrl).trim());
             String path = uri.getPath();
-            return path == null || path.isBlank() || "/".equals(path);
+            if (path == null || path.isBlank() || "/".equals(path)) {
+                return true;
+            }
+            String normalizedPath = path.replaceAll("/+$", "");
+            String finalSegment = normalizedPath.substring(normalizedPath.lastIndexOf('/') + 1)
+                    .toLowerCase(Locale.ROOT);
+            return Set.of("index.php", "index.html", "index.htm",
+                    "default.aspx", "default.html", "home").contains(finalSegment);
         } catch (java.net.URISyntaxException exception) {
             return false;
         }
