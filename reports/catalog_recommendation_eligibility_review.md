@@ -39,3 +39,30 @@ Le premier résultat détaille chaque fiche active, la qualité de sa source, le
 ## Conséquence attendue
 
 Le nombre de suggestions générées peut diminuer, voire être nul pour une destination tant que les fiches n'ont pas été vérifiées. C'est intentionnel : le moteur préfère produire un programme incomplet ou demander un enrichissement du catalogue plutôt que présenter une donnée non étayée comme une recommandation fiable.
+
+
+## Révision de la qualification des sources institutionnelles
+
+L'audit des 27 fiches a montré que les seules valeurs `source_type = OFFICIAL`
+et `source_scope = ITEM_SPECIFIC` ne suffisent pas : certaines URL pointent vers
+un document de destination, un site patrimonial entier, une page d'accueil de parc
+ou un guide lié à un événement.
+
+Le classificateur Java et les deux agrégations du script SQL placent désormais
+les références institutionnelles connues suivantes en `SOURCE_REQUIRES_REVIEW` :
+
+- UNESCO, page de présentation de Stone Town (`/en/list/173`) et document
+  de consignes couvrant Stone Town (`/document/218167`) ;
+- Bank of Tanzania, rapport national `Tanzania Tourism Sector Survey` ;
+- SANParks, page d'accueil de Table Mountain National Park (la page dédiée
+  aux activités de randonnée reste candidate) ;
+- Tanzania Tourist Board, guide de participants CHAN 2024 ;
+- Zanzibar Petroleum Regulatory Authority, circulaire EAPCE25.
+
+Cette liste est une protection ciblée, pas un moteur général de compréhension
+sémantique des pages. Une URL non répertoriée peut toujours être mal étiquetée :
+la revue humaine du contenu reste nécessaire. Les références restent documentées,
+mais ne deviennent pas des preuves factuelles par leur seule présence.
+
+Aucune donnée catalogue, coordonnée, durée, valeur de prix, date de vérification
+ou statut `data_status` n'est modifié par cette évolution.
