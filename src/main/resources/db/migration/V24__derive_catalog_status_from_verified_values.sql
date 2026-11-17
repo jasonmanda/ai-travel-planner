@@ -117,6 +117,13 @@ BEGIN
          WHERE h.attraction_id = p_attraction_id
            AND h.id > v_latest_rejection_id
            AND h.verification_status = 'VERIFIED'
+           AND length(btrim(v_item.name)) > 0
+           AND v_item.description IS NOT NULL AND length(btrim(v_item.description)) > 0
+           AND length(btrim(v_item.category)) > 0
+           AND v_item.latitude IS NOT NULL
+           AND v_item.longitude IS NOT NULL
+           AND v_item.estimated_duration_minutes IS NOT NULL
+           AND v_item.estimated_duration_minutes > 0
            AND h.verified_fields @> ARRAY[
                'name', 'description', 'category', 'latitude',
                'longitude', 'estimated_duration_minutes'
@@ -272,6 +279,13 @@ BEGIN
          WHERE h.activity_id = p_activity_id
            AND h.id > v_latest_rejection_id
            AND h.verification_status = 'VERIFIED'
+           AND length(btrim(v_item.name)) > 0
+           AND v_item.description IS NOT NULL AND length(btrim(v_item.description)) > 0
+           AND length(btrim(v_item.category)) > 0
+           AND v_item.latitude IS NOT NULL
+           AND v_item.longitude IS NOT NULL
+           AND v_item.estimated_duration_minutes IS NOT NULL
+           AND v_item.estimated_duration_minutes > 0
            AND h.verified_fields @> ARRAY[
                'name', 'description', 'category', 'latitude',
                'longitude', 'estimated_duration_minutes'
