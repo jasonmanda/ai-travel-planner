@@ -71,3 +71,13 @@ Après exécution, vérifier les 11 lignes retournées par le SELECT final et re
 - Les liens des sources de coordonnées et de durée sont conservés dans `verification_notes`.
 - Pas de données inventées pour la ferme d'épices générique ni pour les durées insuffisamment documentées.
 - Pas de modification de code applicatif ou de migration de schéma.
+
+## Résultat d'exécution confirmé dans pgAdmin
+
+Le propriétaire du projet a exécuté le script manuel et partagé le SELECT de contrôle final. Les 11 lignes attendues ont été retournées :
+- 10 lignes avec une paire de coordonnées renseignée ;
+- 4 durées renseignées : souks/médina (180 min), Stone Town (180 min), ferme d'épices (210 min), Safari Blue (510 min) ;
+- l'activité générique de ferme d'épices conserve latitude/longitude NULL ;
+- les 11 lignes affichées restent `UNVERIFIED`, sans `last_verified_at`.
+
+Le résumé `target_count=27, found_count=27, missing_coordinate_pair_count=11, missing_or_invalid_duration_count=26, not_verified_count=27` communiqué dans le même retour correspond à l'audit de pré-correction. Il ne doit pas être interprété comme un audit post-correction. Le SELECT final confirme bien les écritures ciblées ; pour obtenir les compteurs post-correction du périmètre complet, relancer le fichier `catalog_remaining_gaps_audit.sql` après le script manuel. Les valeurs attendues si l'état des autres fiches n'a pas changé sont 1 paire de coordonnées manquante et 22 durées manquantes.
