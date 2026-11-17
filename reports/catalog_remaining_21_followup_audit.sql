@@ -74,9 +74,6 @@ FROM target_items
 ORDER BY country, city, item_type, id;
 
 -- Expected population: 21 rows (1 Cape Town attraction, 4 Marrakech records,
--- 16 Zanzibar records). If fewer rows are returned, inspect the current catalog
--- rather than weakening the city/ID filters.
-SELECT item_type, iso_code, city, COUNT(*) AS item_count
-FROM target_items
-GROUP BY item_type, iso_code, city
-ORDER BY iso_code, city, item_type;
+-- 16 Zanzibar records). The detail result above is the authoritative list.
+-- If fewer rows are returned, inspect the current catalog rather than weakening
+-- the city/ID filters.
