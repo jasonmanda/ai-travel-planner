@@ -200,6 +200,7 @@ classified AS (
           WHEN source_type IN ('ENCYCLOPEDIC', 'GENERIC') THEN 'SECONDARY_REFERENCE_ONLY'
           WHEN source_type = 'OFFICIAL' AND source_scope = 'ITEM_SPECIFIC'
            AND source_url ~* '/(index\.(php|html?)|default\.(aspx?|html?)|home)/?([?#].*)?$'
+            THEN 'SOURCE_REQUIRES_REVIEW'
           WHEN source_type = 'OFFICIAL' AND source_scope = 'ITEM_SPECIFIC'
            AND (
                 lower(source_url) LIKE '%whc.unesco.org/en/list/173%'
