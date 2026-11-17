@@ -4,8 +4,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Converts catalog source metadata into user-readable, conservative explanations.
- * It does not independently verify source contents or factual claims.
+ * Converts catalog source metadata into conservative, user-readable explanations.
+ * Source suitability is not factual verification of the catalog item.
  */
 public final class CatalogSourceTransparency {
     private CatalogSourceTransparency() {
@@ -17,6 +17,8 @@ public final class CatalogSourceTransparency {
         String dataStatus = value(item.get("dataStatus"), "UNVERIFIED");
         boolean documented = hasText(item.get("sourceName")) && isHttpUrl(item.get("sourceUrl"));
         String verificationLevel = verificationLevel(dataStatus, documented);
+        String sourceQuality = sourceQuality(sourceType, sourceScope, documented);
+        String sourceQualityReason = sourceQualityReason(sourceType, sourceScope, documented);
 
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("sourceName", item.get("sourceName"));
@@ -25,6 +27,10 @@ public final class CatalogSourceTransparency {
         result.put("sourceTypeLabel", sourceTypeLabel(sourceType));
         result.put("sourceScope", sourceScope);
         result.put("sourceScopeLabel", sourceScopeLabel(sourceScope));
+        result.put("sourceQuality", sourceQuality);
+        result.put("sourceQualityLabel", sourceQualityLabel(sourceQuality));
+        result.put("sourceQualityReason", sourceQualityReason);
+        result.put("sourceSupportsRecommendation", "ITEM_SPECIFIC_PRIMARY".equals(sourceQuality));
         result.put("verificationStatus", dataStatus);
         result.put("verificationLevel", verificationLevel);
         result.put("documented", documented);
@@ -36,6 +42,58 @@ public final class CatalogSourceTransparency {
         result.put("limitations", limitations(sourceType, sourceScope, dataStatus, documented));
         result.put("metric", "SOURCE_CONTEXT_NOT_FACTUAL_VERIFICATION");
         return result;
+    }
+
+    private static String sourceQuality(String type, String scope, boolean documented) {
+        if (!documented) {
+            return "NO_USABLE_SOURCE";
+        }
+        if ("DESTINATION_GENERAL".equalsIgnoreCase(scope)) {
+            return "DESTINATION_CONTEXT_ONLY";
+        }
+        if ("SCIENTIFIC".equalsIgnoreCase(type)) {
+            return "SCIENTIFIC_OR_GEOGRAPHIC_REFERENCE";
+        }
+        if ("ENCYCLOPEDIC".equalsIgnoreCase(type) || "GENERIC".equalsIgnoreCase(type)) {
+            return "SECONDARY_REFERENCE_ONLY";
+        }
+        if ("OFFICIAL".equalsIgnoreCase(type) && "ITEM_SPECIFIC".equalsIgnoreCase(scope)) {
+            return "ITEM_SPECIFIC_PRIMARY";
+        }
+        return "SOURCE_REQUIRES_REVIEW";
+    }
+
+    private static String sourceQualityLabel(String quality) {
+        return switch (quality) {
+            case "NO_USABLE_SOURCE" -> "Aucune source exploitable";
+            case "DESTINATION_CONTEXT_ONLY" -> "Contexte général de destination";
+            case "SCIENTIFIC_OR_GEOGRAPHIC_REFERENCE" -> "Référence scientifique ou géographique";
+            case "SECONDARY_REFERENCE_ONLY" -> "Référence secondaire uniquement";
+            case "ITEM_SPECIFIC_PRIMARY" -> "Source institutionnelle spécifique à l’élément";
+            default -> "Qualité de source à examiner";
+        };
+    }
+
+    private static String sourceQualityReason(String type, String scope, boolean documented) {
+        if (!documented) {
+            return "Aucun couple nom de source et URL HTTP/HTTPS exploitable n’est enregistré. Cette fiche ne dispose donc pas d’appui documentaire utilisable.";
+        }
+        if ("DESTINATION_GENERAL".equalsIgnoreCase(scope)) {
+            return "La source porte sur la destination dans son ensemble. Elle ne suffit pas à confirmer ce lieu ou cette activité, ses opérateurs, son accès ou ses conditions actuelles.";
+        }
+        if ("SCIENTIFIC".equalsIgnoreCase(type)) {
+            return "La référence scientifique ou de localité peut étayer un contexte, une existence ou une localisation. Elle ne prouve pas qu’il s’agit d’une offre touristique visitable ni ses modalités pratiques.";
+        }
+        if ("ENCYCLOPEDIC".equalsIgnoreCase(type)) {
+            return "La source encyclopédique est une référence secondaire. Les informations de visite, l’accès, les horaires et les conditions actuelles doivent être confirmés indépendamment.";
+        }
+        if ("GENERIC".equalsIgnoreCase(type)) {
+            return "La source secondaire peut aider à identifier le lieu, mais ne constitue pas une confirmation institutionnelle des services, horaires, tarifs ou conditions actuelles.";
+        }
+        if ("OFFICIAL".equalsIgnoreCase(type) && "ITEM_SPECIFIC".equalsIgnoreCase(scope)) {
+            return "La source est classée comme institutionnelle et spécifique à l’élément. Son contenu et les champs qu’elle étaye doivent néanmoins être contrôlés avant toute vérification factuelle.";
+        }
+        return "La nature ou la portée de la source ne permet pas encore de déterminer précisément les affirmations qu’elle étaye. Un examen manuel est nécessaire.";
     }
 
     private static String verificationLevel(String status, boolean documented) {
