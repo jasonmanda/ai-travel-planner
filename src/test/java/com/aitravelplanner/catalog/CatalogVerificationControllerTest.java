@@ -214,6 +214,9 @@ class CatalogVerificationControllerTest {
                 "http://example.org/source?lang=fr"
         );
 
+        when(jdbc.queryForMap(anyString(), eq(1L)))
+                .thenThrow(new EmptyResultDataAccessException(1));
+
         for (String url : validUrls) {
             ResponseStatusException exception = assertThrows(
                     ResponseStatusException.class,
