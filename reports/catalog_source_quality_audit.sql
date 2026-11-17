@@ -32,7 +32,7 @@ classified AS (
              WHEN source_type IN ('ENCYCLOPEDIC', 'GENERIC')
                THEN 'SECONDARY_REFERENCE_ONLY'
              WHEN source_type = 'OFFICIAL' AND source_scope = 'ITEM_SPECIFIC'
-               THEN 'ITEM_SPECIFIC_PRIMARY_REQUIRES_CONTENT_REVIEW'
+               THEN 'ITEM_SPECIFIC_PRIMARY_CANDIDATE'
              ELSE 'SOURCE_REQUIRES_REVIEW'
            END AS source_quality
       FROM catalog_items
@@ -64,7 +64,7 @@ classified AS (
              WHEN source_type IN ('ENCYCLOPEDIC', 'GENERIC')
                THEN 'SECONDARY_REFERENCE_ONLY'
              WHEN source_type = 'OFFICIAL' AND source_scope = 'ITEM_SPECIFIC'
-               THEN 'ITEM_SPECIFIC_PRIMARY_REQUIRES_CONTENT_REVIEW'
+               THEN 'ITEM_SPECIFIC_PRIMARY_CANDIDATE'
              ELSE 'SOURCE_REQUIRES_REVIEW'
            END AS source_quality
       FROM catalog_items
