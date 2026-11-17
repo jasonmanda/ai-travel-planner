@@ -96,6 +96,9 @@ public final class CatalogSourceTransparency {
         }
         if ("OFFICIAL".equalsIgnoreCase(type) && "ITEM_SPECIFIC".equalsIgnoreCase(scope)
                 && !specificOfficialSource) {
+            if (isOfficialHomepage(sourceUrl)) {
+                return "La source est déclarée spécifique, mais son URL mène à une page d’accueil institutionnelle générale. Elle doit être remplacée par une preuve dédiée à l’élément ou examinée manuellement.";
+            }
             return "La source est déclarée spécifique, mais son URL correspond à une page générale ou à un document institutionnel couvrant un territoire, un parc, un ensemble patrimonial ou un événement. Elle doit être remplacée par une preuve dédiée à l’élément ou examinée manuellement.";
         }
         if ("OFFICIAL".equalsIgnoreCase(type) && "ITEM_SPECIFIC".equalsIgnoreCase(scope)
@@ -250,6 +253,16 @@ public final class CatalogSourceTransparency {
             return normalizedPath.equals("/storage/documents/committees/all/1677484498.pdf");
         }
         return false;
+    }
+
+    private static boolean isOfficialHomepage(Object sourceUrl) {
+        try {
+            java.net.URI uri = new java.net.URI(String.valueOf(sourceUrl).trim());
+            String path = uri.getPath();
+            return path == null || path.isBlank() || "/".equals(path);
+        } catch (java.net.URISyntaxException exception) {
+            return false;
+        }
     }
 
     private static boolean isHttpUrl(Object value) {
