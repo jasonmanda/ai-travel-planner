@@ -91,7 +91,14 @@ public class RecommendationService {
                     trip.getTravelStyle(), trip.getPreferredDestination());
 
             Recommendation saved = recommendations.save(new Recommendation(
-                    trip, city, totalScore, estimatedTripBudget, budgetStatus, explanation));
+                    trip, city, totalScore, estimatedTripBudget, budgetStatus,
+                    city.getEstimatedDailyBudgetStatus(),
+                    city.getEstimatedDailyBudgetCurrency(),
+                    city.getEstimatedDailyBudgetSourceName(),
+                    city.getEstimatedDailyBudgetSourceUrl(),
+                    city.getEstimatedDailyBudgetVerifiedAt(),
+                    city.getEstimatedDailyBudgetNotes(),
+                    explanation));
 
             Map<String, Object> item = new LinkedHashMap<>();
             item.put("id", saved.getId());
@@ -106,12 +113,12 @@ public class RecommendationService {
                     "travelStyle", styleScore,
                     "preferredDestination", preferenceScore));
             item.put("estimatedTripBudget", estimatedTripBudget);
-            item.put("currency", city.getEstimatedDailyBudgetCurrency());
-            item.put("budgetEstimateStatus", city.getEstimatedDailyBudgetStatus());
-            item.put("budgetSourceName", city.getEstimatedDailyBudgetSourceName());
-            item.put("budgetSourceUrl", city.getEstimatedDailyBudgetSourceUrl());
-            item.put("budgetVerifiedAt", city.getEstimatedDailyBudgetVerifiedAt());
-            item.put("budgetEstimateNotes", city.getEstimatedDailyBudgetNotes());
+            item.put("currency", saved.getBudgetCurrency());
+            item.put("budgetEstimateStatus", saved.getBudgetEstimateStatus());
+            item.put("budgetSourceName", saved.getBudgetSourceName());
+            item.put("budgetSourceUrl", saved.getBudgetSourceUrl());
+            item.put("budgetVerifiedAt", saved.getBudgetVerifiedAt());
+            item.put("budgetEstimateNotes", saved.getBudgetEstimateNotes());
             item.put("requestedBudget", trip.getBudget());
             item.put("requestedBudgetCurrency", trip.getCurrency());
             item.put("budgetStatus", budgetStatus);
@@ -149,12 +156,12 @@ public class RecommendationService {
             item.put("countryCode", city.getCountry().getIsoCode());
             item.put("score", r.getScore());
             item.put("estimatedTripBudget", r.getEstimatedTripBudget());
-            item.put("currency", city.getEstimatedDailyBudgetCurrency());
-            item.put("budgetEstimateStatus", city.getEstimatedDailyBudgetStatus());
-            item.put("budgetSourceName", city.getEstimatedDailyBudgetSourceName());
-            item.put("budgetSourceUrl", city.getEstimatedDailyBudgetSourceUrl());
-            item.put("budgetVerifiedAt", city.getEstimatedDailyBudgetVerifiedAt());
-            item.put("budgetEstimateNotes", city.getEstimatedDailyBudgetNotes());
+            item.put("currency", r.getBudgetCurrency());
+            item.put("budgetEstimateStatus", r.getBudgetEstimateStatus());
+            item.put("budgetSourceName", r.getBudgetSourceName());
+            item.put("budgetSourceUrl", r.getBudgetSourceUrl());
+            item.put("budgetVerifiedAt", r.getBudgetVerifiedAt());
+            item.put("budgetEstimateNotes", r.getBudgetEstimateNotes());
             item.put("budgetStatus", r.getBudgetStatus());
             item.put("explanation", r.getExplanation());
             item.put("generatedAt", r.getGeneratedAt());
