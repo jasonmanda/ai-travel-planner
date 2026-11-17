@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -52,7 +53,7 @@ class TravelCatalogControllerTest {
         @SuppressWarnings("unchecked")
         Map<String, Object> transparency = (Map<String, Object>) activities.getFirst().get("sourceTransparency");
         assertEquals("SCIENTIFIC_OR_GEOGRAPHIC_REFERENCE", transparency.get("sourceQuality"));
-        assertEquals(false, transparency.get("sourceSupportsRecommendation"));
+        assertFalse((Boolean) transparency.get("sourceSupportsRecommendation"));
         assertTrue(String.valueOf(transparency.get("sourceQualityReason")).contains("offre touristique"));
     }
 }
