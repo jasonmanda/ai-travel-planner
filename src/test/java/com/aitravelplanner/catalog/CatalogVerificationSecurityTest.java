@@ -100,11 +100,10 @@ class CatalogVerificationSecurityTest {
 
     @Test
     void adminCanReachVerificationEndpoint() throws Exception {
-        when(jdbcTemplate.queryForObject(
-                eq("SELECT COUNT(*) FROM attractions WHERE id = ?"),
-                eq(Integer.class),
+        when(jdbcTemplate.queryForMap(
+                org.mockito.ArgumentMatchers.contains("FOR UPDATE"),
                 eq(1L)
-        )).thenReturn(0);
+        )).thenThrow(new org.springframework.dao.EmptyResultDataAccessException(1));
 
         mockMvc.perform(post(ENDPOINT)
                         .with(httpBasic("test-admin", "test-password"))
@@ -112,9 +111,8 @@ class CatalogVerificationSecurityTest {
                         .content(VALID_BODY))
                 .andExpect(status().isNotFound());
 
-        verify(jdbcTemplate).queryForObject(
-                eq("SELECT COUNT(*) FROM attractions WHERE id = ?"),
-                eq(Integer.class),
+        verify(jdbcTemplate).queryForMap(
+                org.mockito.ArgumentMatchers.contains("FOR UPDATE"),
                 eq(1L)
         );
     }

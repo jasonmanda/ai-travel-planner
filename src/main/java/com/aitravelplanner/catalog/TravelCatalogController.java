@@ -107,7 +107,7 @@ public class TravelCatalogController {
                     ORDER BY h.verified_at DESC, h.id DESC
                     LIMIT 1
                 ) pv ON TRUE
-                WHERE a.city_id = ? AND a.active = TRUE ORDER BY a.name
+                WHERE a.city_id = ? AND a.active = TRUE AND a.data_status <> 'REJECTED' ORDER BY a.name
                 """, cityId));
     }
 
@@ -153,7 +153,7 @@ public class TravelCatalogController {
                  AND rel.duplicate_item_type = 'ACTIVITY'
                  AND rel.duplicate_item_id = act.id
                  AND rel.relation_type = 'SAME_EXPERIENCE'
-                WHERE act.city_id = ? AND act.active = TRUE
+                WHERE act.city_id = ? AND act.active = TRUE AND act.data_status <> 'REJECTED'
                 ORDER BY act.category, act.name
                 """, cityId));
     }

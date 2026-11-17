@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.jdbc.core.ConnectionCallback;
+import org.springframework.dao.EmptyResultDataAccessException;
 
 import java.net.URI;
 import java.sql.PreparedStatement;
@@ -82,6 +83,16 @@ public class CatalogVerificationController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Identifiant invalide");
         }
 
+        if (request.verifiedFields() == null
+                || request.verifiedFields().isEmpty()
+                || request.verifiedFields().stream()
+                .anyMatch(field -> field == null || field.isBlank())) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Au moins un champ vérifié doit être renseigné"
+            );
+        }
+
         List<String> fields = request.verifiedFields().stream()
                 .map(String::trim)
                 .toList();
@@ -96,13 +107,19 @@ public class CatalogVerificationController {
 
         validateSourceUrl(request.sourceUrl());
 
-        Integer count = jdbc.queryForObject(
-                "SELECT COUNT(*) FROM " + itemTable + " WHERE id = ?",
-                Integer.class,
-                itemId
-        );
-        if (count == null || count == 0) {
+        Map<String, Object> catalogItem;
+        try {
+            // Lock the catalog row before reading any values used by this verification.
+            catalogItem = jdbc.queryForMap(
+                    "SELECT * FROM " + itemTable + " WHERE id = ? FOR UPDATE",
+                    itemId
+            );
+        } catch (EmptyResultDataAccessException exception) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Élément du catalogue introuvable");
+        }
+
+        if (request.verificationStatus() != CatalogVerificationRequest.VerificationStatus.REJECTED) {
+            validateEssentialFieldValues(fields, catalogItem);
         }
 
         String priceColumn = itemTable.equals("attractions")
@@ -115,13 +132,8 @@ public class CatalogVerificationController {
         BigDecimal verifiedPrice = null;
         String verifiedCurrency = null;
         if (verifiesPrice) {
-            Map<String, Object> currentPrice = jdbc.queryForMap(
-                    "SELECT " + priceColumn + " AS price, cost_currency AS currency"
-                            + " FROM " + itemTable + " WHERE id = ? FOR SHARE",
-                    itemId
-            );
-            verifiedPrice = (BigDecimal) currentPrice.get("price");
-            verifiedCurrency = (String) currentPrice.get("currency");
+            verifiedPrice = (BigDecimal) catalogItem.get(priceColumn);
+            verifiedCurrency = (String) catalogItem.get("cost_currency");
             if (verifiedPrice == null || verifiedCurrency == null || verifiedCurrency.isBlank()) {
                 throw new ResponseStatusException(
                         HttpStatus.BAD_REQUEST,
@@ -130,13 +142,23 @@ public class CatalogVerificationController {
             }
         }
 
+        // Field names come only from the server-side allowlist; values are read by PostgreSQL
+        // from the row already locked above, never accepted from the HTTP request.
+        String jsonbArguments = fields.stream()
+                .map(field -> "'" + field + "', " + field)
+                .collect(java.util.stream.Collectors.joining(", "));
+        String snapshotSql = "SELECT jsonb_build_object(" + jsonbArguments + ")::text"
+                + " FROM " + itemTable + " WHERE id = ?";
+        String verifiedValues = jdbc.queryForObject(snapshotSql, String.class, itemId);
+
         String sql = "INSERT INTO " + historyTable + " (" + foreignKey
                 + ", verification_status, verified_fields, source_name, source_url,"
-                + " verification_notes, verified_by, verified_price, verified_currency)"
-                + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id, verified_at";
+                + " verification_notes, verified_by, verified_price, verified_currency, verified_values)"
+                + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?::jsonb) RETURNING id, verified_at";
 
         BigDecimal priceSnapshot = verifiedPrice;
         String currencySnapshot = verifiedCurrency;
+        String valuesSnapshot = verifiedValues;
         Map<String, Object> saved = jdbc.execute((ConnectionCallback<Map<String, Object>>) connection -> {
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
                 statement.setLong(1, itemId);
@@ -153,6 +175,7 @@ public class CatalogVerificationController {
                     statement.setBigDecimal(8, priceSnapshot);
                     statement.setString(9, currencySnapshot);
                 }
+                statement.setString(10, valuesSnapshot);
 
                 try (ResultSet resultSet = statement.executeQuery()) {
                     if (!resultSet.next()) {
@@ -178,6 +201,29 @@ public class CatalogVerificationController {
         response.putAll(saved);
         response.put("message", "Vérification enregistrée dans l'historique");
         return response;
+    }
+
+    private void validateEssentialFieldValues(
+            List<String> fields,
+            Map<String, Object> catalogItem) {
+        for (String field : fields) {
+            Object value = catalogItem.get(field);
+            boolean invalid = switch (field) {
+                case "name", "description", "category" ->
+                        !(value instanceof String text) || text.isBlank();
+                case "latitude", "longitude" ->
+                        !(value instanceof Number);
+                case "estimated_duration_minutes" ->
+                        !(value instanceof Number number) || number.intValue() <= 0;
+                default -> false;
+            };
+            if (invalid) {
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "Le champ essentiel '" + field + "' doit contenir une valeur valide avant vérification"
+                );
+            }
+        }
     }
 
     private void validateSourceUrl(String sourceUrl) {
