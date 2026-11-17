@@ -49,7 +49,7 @@ class TravelCatalogControllerTest {
         @SuppressWarnings("unchecked")
         Map<String, Object> quality = (Map<String, Object>) activities.getFirst().get("catalogQuality");
         assertEquals("DATA_COMPLETENESS_NOT_EXPERIENCE_QUALITY", quality.get("metric"));
-        assertEquals(20, quality.get("score"));
+        assertEquals(40, quality.get("score"));
         @SuppressWarnings("unchecked")
         Map<String, Object> transparency = (Map<String, Object>) activities.getFirst().get("sourceTransparency");
         assertEquals("SCIENTIFIC_OR_GEOGRAPHIC_REFERENCE", transparency.get("sourceQuality"));
