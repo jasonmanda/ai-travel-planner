@@ -45,11 +45,11 @@ UPDATE attractions a
    AND a.name = 'Jardin Majorelle';
 
 UPDATE attractions a
-   SET source_name = 'Ministère de la Jeunesse, de la Culture et de la Communication - Patrimoine matériel national',
-       source_url = 'https://mjcc.gov.ma/fr/departements/culture/patrimoine-materiel-national/',
+   SET source_name = 'UNESCO Patrimoine culturel immatériel - L’espace culturel de la place Jemaa el-Fna',
+       source_url = 'https://ich.unesco.org/fr/RL/l-espace-culturel-de-la-place-jemaa-el-fna-00014',
        source_type = 'OFFICIAL',
-       source_scope = 'DESTINATION_GENERAL',
-       verification_notes = 'Page générale du patrimoine matériel national marocain, et non une fiche dédiée à Jemaa el-Fna. Elle ne doit pas être utilisée comme preuve spécifique de cette place; une référence institutionnelle directement consacrée au site reste à rechercher.'
+       source_scope = 'ITEM_SPECIFIC',
+       verification_notes = 'Fiche UNESCO directement consacrée à l’espace culturel de la place Jemaa el-Fna. Elle étaye l’existence et l’importance culturelle de la place ainsi que ses traditions; elle ne confirme pas les horaires, les prestations commerciales, les prix ni les conditions actuelles de visite.'
   FROM cities c JOIN countries co ON co.id = c.country_id
  WHERE a.city_id = c.id AND c.name = 'Marrakech' AND co.iso_code = 'MA'
    AND a.name = 'Jemaa el-Fna';
@@ -150,18 +150,18 @@ UPDATE attractions
 
 UPDATE attractions
    SET source_name = 'Jozani Chwaka Bay National Park - site officiel du gouvernement de Zanzibar',
-       source_url = 'https://maliasilismz.go.tz/',
+       source_url = 'https://maliasilismz.go.tz/index.php',
        source_type = 'OFFICIAL',
-       source_scope = 'DESTINATION_GENERAL',
-       verification_notes = 'Site officiel consacré au parc national de Jozani Chwaka Bay. La page d’accueil présente des actualités et informations générales du parc, mais ne confirme pas les modalités propres à cette fiche, les horaires, tarifs ou conditions d’accès.'
+       source_scope = 'ITEM_SPECIFIC',
+       verification_notes = 'Page officielle du parc décrivant Jozani Chwaka Bay, ses habitats, sa faune et les espaces de visite. Elle documente le parc comme attraction, mais les horaires, tarifs, accès du jour et conditions de visite doivent être confirmés auprès de l’administration.'
  WHERE source_url = 'https://www.antweb.org/locality.do?code=CEPF-TZ-10';
 
 UPDATE activities
-   SET source_name = 'Jozani Chwaka Bay National Park - site officiel du gouvernement de Zanzibar',
-       source_url = 'https://maliasilismz.go.tz/',
+   SET source_name = 'Jozani Chwaka Bay National Park - official guided tours and nature walks',
+       source_url = 'https://maliasilismz.go.tz/index.php',
        source_type = 'OFFICIAL',
-       source_scope = 'DESTINATION_GENERAL',
-       verification_notes = 'Site officiel consacré au parc national de Jozani Chwaka Bay. La page d’accueil apporte un contexte sur le parc, mais ne confirme pas un itinéraire précis, une durée, un tarif ou les modalités propres à cette activité.'
+       source_scope = 'ITEM_SPECIFIC',
+       verification_notes = 'Page officielle du parc présentant des visites guidées et des promenades dans les milieux forestiers et de mangrove. Elle étaye l’existence d’une expérience guidée à Jozani, mais ne garantit pas la disponibilité à une date donnée, le tarif, la durée ou les conditions du jour.'
  WHERE source_url = 'https://www.antweb.org/locality.do?code=CEPF-TZ-10';
 
 UPDATE attractions
