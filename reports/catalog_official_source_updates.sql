@@ -48,8 +48,8 @@ UPDATE attractions a
    SET source_name = 'Ministère de la Jeunesse, de la Culture et de la Communication - Patrimoine matériel national',
        source_url = 'https://mjcc.gov.ma/fr/departements/culture/patrimoine-materiel-national/',
        source_type = 'OFFICIAL',
-       source_scope = 'ITEM_SPECIFIC',
-       verification_notes = 'Inventaire institutionnel marocain mentionnant la place Jamaa El Fna et son classement patrimonial. Il étaye son identification patrimoniale, pas les événements, horaires, vendeurs ou conditions actuelles.'
+       source_scope = 'DESTINATION_GENERAL',
+       verification_notes = 'Page générale du patrimoine matériel national marocain, et non une fiche dédiée à Jemaa el-Fna. Elle ne doit pas être utilisée comme preuve spécifique de cette place; une référence institutionnelle directement consacrée au site reste à rechercher.'
   FROM cities c JOIN countries co ON co.id = c.country_id
  WHERE a.city_id = c.id AND c.name = 'Marrakech' AND co.iso_code = 'MA'
    AND a.name = 'Jemaa el-Fna';
