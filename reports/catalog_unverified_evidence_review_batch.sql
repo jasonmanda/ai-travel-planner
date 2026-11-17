@@ -18,6 +18,68 @@
 
 BEGIN;
 
+-- Fail before changing anything if the reviewed snapshot no longer matches.
+-- This keeps the six corrections all-or-nothing.
+DO $
+DECLARE
+    v_count INTEGER;
+BEGIN
+    SELECT COUNT(*) INTO v_count
+      FROM activities act
+      JOIN cities c ON c.id = act.city_id
+      JOIN countries co ON co.id = c.country_id
+     WHERE co.iso_code = 'ZA' AND c.name = 'Le Cap'
+       AND act.id = 6 AND act.name = 'Découverte du front de mer'
+       AND act.source_url = 'https://www.waterfront.co.za/attractions';
+    IF v_count <> 1 THEN RAISE EXCEPTION 'Precondition failed: V&A Waterfront activity 6'; END IF;
+
+    SELECT COUNT(*) INTO v_count
+      FROM attractions a
+      JOIN cities c ON c.id = a.city_id
+      JOIN countries co ON co.id = c.country_id
+     WHERE co.iso_code = 'ZA' AND c.name = 'Le Cap'
+       AND a.id = 5 AND a.name = 'V&A Waterfront'
+       AND a.source_url = 'https://www.waterfront.co.za/visitor-information';
+    IF v_count <> 1 THEN RAISE EXCEPTION 'Precondition failed: V&A Waterfront attraction 5'; END IF;
+
+    SELECT COUNT(*) INTO v_count
+      FROM activities act
+      JOIN cities c ON c.id = act.city_id
+      JOIN countries co ON co.id = c.country_id
+     WHERE co.iso_code = 'ZA' AND c.name = 'Le Cap'
+       AND act.id = 5 AND act.name = 'Randonnée sur Lion''s Head'
+       AND act.source_url = 'https://www.sanparks.org/parks/table-mountain/what-to-do/activities/hikes-walks-trails'
+       AND act.estimated_duration_minutes = 90;
+    IF v_count <> 1 THEN RAISE EXCEPTION 'Precondition failed: Lion''s Head activity 5'; END IF;
+
+    SELECT COUNT(*) INTO v_count
+      FROM attractions a
+      JOIN cities c ON c.id = a.city_id
+      JOIN countries co ON co.id = c.country_id
+     WHERE co.iso_code = 'TZ' AND c.name = 'Zanzibar'
+       AND a.id = 14 AND a.name = 'Nungwi Beach'
+       AND a.source_url = 'https://www.frontiersin.org/journals/marine-science/articles/10.3389/fmars.2026.1946229/full';
+    IF v_count <> 1 THEN RAISE EXCEPTION 'Precondition failed: Nungwi Beach attraction 14'; END IF;
+
+    SELECT COUNT(*) INTO v_count
+      FROM activities act
+      JOIN cities c ON c.id = act.city_id
+      JOIN countries co ON co.id = c.country_id
+     WHERE co.iso_code = 'TZ' AND c.name = 'Zanzibar'
+       AND act.id = 1 AND act.name = 'Journée plage à Paje'
+       AND act.source_url = 'https://bot.go.tz/Publications/Other/Tanzania%20Tourism%20Sector%20Survey%20Report/en/2025082910055206.pdf';
+    IF v_count <> 1 THEN RAISE EXCEPTION 'Precondition failed: Paje activity 1'; END IF;
+
+    SELECT COUNT(*) INTO v_count
+      FROM attractions a
+      JOIN cities c ON c.id = a.city_id
+      JOIN countries co ON co.id = c.country_id
+     WHERE co.iso_code = 'TZ' AND c.name = 'Zanzibar'
+       AND a.id = 15 AND a.name = 'Paje Beach'
+       AND a.source_url = 'https://bot.go.tz/Publications/Other/Tanzania%20Tourism%20Sector%20Survey%20Report/en/2025082910055206.pdf';
+    IF v_count <> 1 THEN RAISE EXCEPTION 'Precondition failed: Paje Beach attraction 15'; END IF;
+END $;
+
 -- 1. V&A Waterfront activity: use the official curated itinerary/attractions page.
 UPDATE activities act
    SET source_name = 'V&A Waterfront - Plan Your Day (official attractions and itineraries)',
