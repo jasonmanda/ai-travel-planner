@@ -86,6 +86,20 @@ class CatalogRecommendationEligibilityTest {
         assertTrue(result.reasons().contains("OFFICIAL_ITEM_SPECIFIC_SOURCE_REQUIRED"));
     }
 
+    @Test
+    void excludesOperatorPrimarySourceEvenWhenOtherFieldsAreValid() {
+        Map<String, Object> item = validItem();
+        item.put("sourceType", "OPERATOR_PRIMARY");
+        item.put("sourceUrl", "https://safariblue.net/tours/original-experience/");
+
+        CatalogRecommendationEligibility.Evaluation result =
+                CatalogRecommendationEligibility.evaluate(item);
+
+        assertFalse(result.eligible());
+        assertTrue(result.reasons().contains("OFFICIAL_ITEM_SPECIFIC_SOURCE_REQUIRED"));
+    }
+
+
     private static Map<String, Object> validItem() {
         Map<String, Object> item = new LinkedHashMap<>();
         item.put("title", "Example attraction");
