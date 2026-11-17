@@ -147,8 +147,7 @@ class CatalogSourceTransparencyTest {
                 "https://www.bot.go.tz/Publications/Other/Tanzania%20Tourism%20Sector%20Survey%20Report.pdf",
                 "https://www.sanparks.org/parks/table-mountain",
                 "https://www.tanzaniatourism.go.tz/data/2025/08/CHAN-2024-Participant-Guidebook-1.pdf",
-                "https://www.nishati.go.tz/uploads/EAPCE25-FIRST-CIRCULAR.pdf",
-                "https://zanzibarassembly.go.tz/storage/documents/Committees/all/1677484498.pdf"
+                "https://www.nishati.go.tz/uploads/EAPCE25-FIRST-CIRCULAR.pdf"
         };
 
         for (String url : urls) {
@@ -160,6 +159,21 @@ class CatalogSourceTransparencyTest {
             assertEquals("SOURCE_REQUIRES_REVIEW", transparency.get("sourceQuality"), url);
             assertFalse((Boolean) transparency.get("sourceSupportsRecommendation"), url);
         }
+    }
+
+    @Test
+    void officialForodhaniCommitteeReportIsAnItemSpecificCandidateButNotVerification() {
+        Map<String, Object> item = item("UNVERIFIED");
+        item.put("sourceName", "Zanzibar House of Representatives - Budget Committee Report 2022/2023");
+        item.put("sourceUrl",
+                "https://zanzibarassembly.go.tz/storage/documents/Committees/all/1677484498.pdf");
+
+        Map<String, Object> transparency = CatalogSourceTransparency.describe(item);
+
+        assertEquals("ITEM_SPECIFIC_PRIMARY_CANDIDATE", transparency.get("sourceQuality"));
+        assertEquals("UNVERIFIED", transparency.get("verificationStatus"));
+        assertFalse((Boolean) transparency.get("verified"));
+        assertFalse((Boolean) transparency.get("sourceSupportsRecommendation"));
     }
 
     @Test
