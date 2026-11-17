@@ -107,6 +107,16 @@ classified AS (
            AND source_url ~* '/(attractions|visitor-information|useful-information|visitor-tips|patrimoine-materiel-national|standards-catalogue)/?([?#].*)?$'
             THEN 'SOURCE_REQUIRES_REVIEW'
           WHEN source_type = 'OFFICIAL' AND source_scope = 'ITEM_SPECIFIC'
+           AND (
+                lower(source_url) LIKE '%whc.unesco.org/en/list/173%'
+             OR lower(source_url) LIKE '%whc.unesco.org/document/218167%'
+             OR lower(source_url) LIKE '%bot.go.tz/%tanzania%tourism%sector%survey%'
+             OR lower(source_url) LIKE '%sanparks.org/parks/table-mountain'
+             OR lower(source_url) LIKE '%tanzaniatourism.go.tz/%chan-2024-participant-guidebook%'
+             OR lower(source_url) LIKE '%nishati.go.tz/%eapce25%'
+           )
+            THEN 'SOURCE_REQUIRES_REVIEW'
+          WHEN source_type = 'OFFICIAL' AND source_scope = 'ITEM_SPECIFIC'
             THEN 'ITEM_SPECIFIC_PRIMARY_CANDIDATE'
           ELSE 'SOURCE_REQUIRES_REVIEW'
         END AS source_quality,
@@ -186,6 +196,16 @@ classified AS (
           WHEN source_type IN ('ENCYCLOPEDIC', 'GENERIC') THEN 'SECONDARY_REFERENCE_ONLY'
           WHEN source_type = 'OFFICIAL' AND source_scope = 'ITEM_SPECIFIC'
            AND source_url ~* '/(attractions|visitor-information|useful-information|visitor-tips|patrimoine-materiel-national|standards-catalogue)/?([?#].*)?$'
+            THEN 'SOURCE_REQUIRES_REVIEW'
+          WHEN source_type = 'OFFICIAL' AND source_scope = 'ITEM_SPECIFIC'
+           AND (
+                lower(source_url) LIKE '%whc.unesco.org/en/list/173%'
+             OR lower(source_url) LIKE '%whc.unesco.org/document/218167%'
+             OR lower(source_url) LIKE '%bot.go.tz/%tanzania%tourism%sector%survey%'
+             OR lower(source_url) LIKE '%sanparks.org/parks/table-mountain'
+             OR lower(source_url) LIKE '%tanzaniatourism.go.tz/%chan-2024-participant-guidebook%'
+             OR lower(source_url) LIKE '%nishati.go.tz/%eapce25%'
+           )
             THEN 'SOURCE_REQUIRES_REVIEW'
           WHEN source_type = 'OFFICIAL' AND source_scope = 'ITEM_SPECIFIC'
             THEN 'ITEM_SPECIFIC_PRIMARY_CANDIDATE'
