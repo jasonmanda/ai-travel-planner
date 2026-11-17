@@ -96,7 +96,7 @@ public final class CatalogSourceTransparency {
         }
         if ("OFFICIAL".equalsIgnoreCase(type) && "ITEM_SPECIFIC".equalsIgnoreCase(scope)
                 && !specificOfficialSource) {
-            return "La source est déclarée spécifique, mais son URL ressemble à une page d’accueil ou à une page générale de répertoire/information. Elle doit être examinée manuellement avant de servir de référence spécifique.";
+            return "La source est déclarée spécifique, mais son URL correspond à une page générale ou à un document institutionnel couvrant un territoire, un parc, un ensemble patrimonial ou un événement. Elle doit être remplacée par une preuve dédiée à l’élément ou examinée manuellement.";
         }
         if ("OFFICIAL".equalsIgnoreCase(type) && "ITEM_SPECIFIC".equalsIgnoreCase(scope)
                 && specificOfficialSource) {
@@ -196,6 +196,9 @@ public final class CatalogSourceTransparency {
                 return false;
             }
             String normalizedPath = path.replaceAll("/+$", "");
+            if (isKnownGeneralOfficialReference(uri.getHost(), normalizedPath)) {
+                return false;
+            }
             String finalSegment = normalizedPath.substring(normalizedPath.lastIndexOf('/') + 1)
                     .toLowerCase(Locale.ROOT);
             Set<String> generalFinalSegments = Set.of(
@@ -209,6 +212,36 @@ public final class CatalogSourceTransparency {
         } catch (java.net.URISyntaxException exception) {
             return false;
         }
+    }
+
+    /**
+     * Known institutional pages/documents that describe a wider destination, park,
+     * heritage area or event rather than the individual visitor attraction/activity.
+     * Keep this list conservative and mirrored by the manual SQL audit.
+     */
+    private static boolean isKnownGeneralOfficialReference(String host, String path) {
+        if (host == null) {
+            return false;
+        }
+        String normalizedHost = host.toLowerCase(Locale.ROOT);
+        String normalizedPath = path.toLowerCase(Locale.ROOT);
+        if ("whc.unesco.org".equals(normalizedHost)) {
+            return normalizedPath.equals("/en/list/173")
+                    || normalizedPath.equals("/document/218167");
+        }
+        if ("bot.go.tz".equals(normalizedHost)) {
+            return normalizedPath.replace("%20", " ").contains("tanzania tourism sector survey");
+        }
+        if ("sanparks.org".equals(normalizedHost)) {
+            return normalizedPath.equals("/parks/table-mountain");
+        }
+        if ("tanzaniatourism.go.tz".equals(normalizedHost)) {
+            return normalizedPath.contains("chan-2024-participant-guidebook");
+        }
+        if ("nishati.go.tz".equals(normalizedHost)) {
+            return normalizedPath.contains("eapce25");
+        }
+        return false;
     }
 
     private static boolean isHttpUrl(Object value) {
