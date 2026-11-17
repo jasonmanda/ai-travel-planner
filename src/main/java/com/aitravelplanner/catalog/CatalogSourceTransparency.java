@@ -20,8 +20,10 @@ public final class CatalogSourceTransparency {
         boolean documented = hasText(item.get("sourceName")) && isHttpUrl(item.get("sourceUrl"));
         String verificationLevel = verificationLevel(dataStatus, documented);
         boolean specificOfficialSource = isSpecificOfficialSource(sourceType, sourceScope, item.get("sourceUrl"), documented);
-        String sourceQuality = sourceQuality(sourceType, sourceScope, documented, specificOfficialSource);
-        String sourceQualityReason = sourceQualityReason(sourceType, sourceScope, item.get("sourceUrl"), documented, specificOfficialSource);
+        boolean specificOperatorSource = isSpecificOperatorSource(sourceType, sourceScope, item.get("sourceUrl"), documented);
+        String sourceQuality = sourceQuality(sourceType, sourceScope, documented, specificOfficialSource, specificOperatorSource);
+        String sourceQualityReason = sourceQualityReason(sourceType, sourceScope, item.get("sourceUrl"), documented,
+                specificOfficialSource, specificOperatorSource);
 
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("sourceName", item.get("sourceName"));
@@ -47,7 +49,8 @@ public final class CatalogSourceTransparency {
         return result;
     }
 
-    private static String sourceQuality(String type, String scope, boolean documented, boolean specificOfficialSource) {
+    private static String sourceQuality(String type, String scope, boolean documented, boolean specificOfficialSource,
+                                        boolean specificOperatorSource) {
         if (!documented) {
             return "NO_USABLE_SOURCE";
         }
@@ -59,6 +62,10 @@ public final class CatalogSourceTransparency {
         }
         if ("ENCYCLOPEDIC".equalsIgnoreCase(type) || "GENERIC".equalsIgnoreCase(type)) {
             return "SECONDARY_REFERENCE_ONLY";
+        }
+        if ("OPERATOR_PRIMARY".equalsIgnoreCase(type) && "ITEM_SPECIFIC".equalsIgnoreCase(scope)
+                && specificOperatorSource) {
+            return "OPERATOR_PRIMARY_CANDIDATE";
         }
         if ("OFFICIAL".equalsIgnoreCase(type) && "ITEM_SPECIFIC".equalsIgnoreCase(scope)
                 && specificOfficialSource) {
@@ -78,7 +85,8 @@ public final class CatalogSourceTransparency {
         };
     }
 
-    private static String sourceQualityReason(String type, String scope, Object sourceUrl, boolean documented, boolean specificOfficialSource) {
+    private static String sourceQualityReason(String type, String scope, Object sourceUrl, boolean documented,
+                                              boolean specificOfficialSource, boolean specificOperatorSource) {
         if (!documented) {
             return "Aucun couple nom de source et URL HTTP/HTTPS exploitable n’est enregistré. Cette fiche ne dispose donc pas d’appui documentaire utilisable.";
         }
@@ -93,6 +101,12 @@ public final class CatalogSourceTransparency {
         }
         if ("GENERIC".equalsIgnoreCase(type)) {
             return "La source secondaire peut aider à identifier le lieu, mais ne constitue pas une confirmation institutionnelle des services, horaires, tarifs ou conditions actuelles.";
+        }
+        if ("OPERATOR_PRIMARY".equalsIgnoreCase(type) && "ITEM_SPECIFIC".equalsIgnoreCase(scope)) {
+            if (!specificOperatorSource) {
+                return "La source est déclarée comme provenant d’un opérateur, mais son URL ne mène pas à une page dédiée à sa propre offre. Un examen manuel est nécessaire.";
+            }
+            return "La page publiée par l’opérateur décrit sa propre excursion ou prestation. Elle constitue une source primaire sur cette offre, mais pas une validation institutionnelle indépendante du lieu, de l’accès, des tarifs ou des conditions actuelles.";
         }
         if ("OFFICIAL".equalsIgnoreCase(type) && "ITEM_SPECIFIC".equalsIgnoreCase(scope)
                 && !specificOfficialSource) {
@@ -121,6 +135,7 @@ public final class CatalogSourceTransparency {
     private static String sourceTypeLabel(String type) {
         return switch (type.toUpperCase()) {
             case "OFFICIAL" -> "Source institutionnelle ou officielle";
+            case "OPERATOR_PRIMARY" -> "Source primaire publiée par un opérateur touristique";
             case "SCIENTIFIC" -> "Source scientifique";
             case "ENCYCLOPEDIC" -> "Source encyclopédique";
             case "GENERIC" -> "Source documentaire générale";
@@ -200,7 +215,7 @@ public final class CatalogSourceTransparency {
             }
             // Scripted index and default documents are still institutional homepages,
             // not item-specific evidence, even when their path is not just "/".
-            if (isOfficialHomepage(sourceUrl)) {
+            if (isOfficialHomepage(sourceUrl) && !isDedicatedParkAuthorityHomepage(uri)) {
                 return false;
             }
             String normalizedPath = path.replaceAll("/+$", "");
@@ -220,6 +235,34 @@ public final class CatalogSourceTransparency {
         } catch (java.net.URISyntaxException exception) {
             return false;
         }
+    }
+
+    private static boolean isSpecificOperatorSource(
+            String type, String scope, Object sourceUrl, boolean documented) {
+        if (!documented || !"OPERATOR_PRIMARY".equalsIgnoreCase(type)
+                || !"ITEM_SPECIFIC".equalsIgnoreCase(scope)) {
+            return false;
+        }
+        try {
+            java.net.URI uri = new java.net.URI(String.valueOf(sourceUrl).trim());
+            String path = uri.getPath();
+            if (path == null || path.isBlank() || "/".equals(path) || isOfficialHomepage(sourceUrl)) {
+                return false;
+            }
+            String normalizedPath = path.replaceAll("/+$", "");
+            String finalSegment = normalizedPath.substring(normalizedPath.lastIndexOf('/') + 1)
+                    .toLowerCase(Locale.ROOT);
+            return !Set.of("tours", "excursions", "experiences", "activities", "booking").contains(finalSegment);
+        } catch (java.net.URISyntaxException exception) {
+            return false;
+        }
+    }
+
+    private static boolean isDedicatedParkAuthorityHomepage(java.net.URI uri) {
+        String host = uri.getHost();
+        String path = uri.getPath();
+        return host != null && "maliasilismz.go.tz".equalsIgnoreCase(host)
+                && (path == null || path.isBlank() || "/".equals(path));
     }
 
     /**
