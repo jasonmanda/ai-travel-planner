@@ -25,6 +25,18 @@ public class Recommendation {
     private BigDecimal estimatedTripBudget;
     @Column(name = "budget_status", nullable = false, length = 30)
     private String budgetStatus;
+    @Column(name = "budget_estimate_status", length = 20)
+    private String budgetEstimateStatus;
+    @Column(name = "budget_currency", length = 3)
+    private String budgetCurrency;
+    @Column(name = "budget_source_name", length = 180)
+    private String budgetSourceName;
+    @Column(name = "budget_source_url", length = 1000)
+    private String budgetSourceUrl;
+    @Column(name = "budget_verified_at")
+    private Instant budgetVerifiedAt;
+    @Column(name = "budget_estimate_notes", length = 1000)
+    private String budgetEstimateNotes;
     @Column(length = 1000)
     private String explanation;
     @Column(name = "generated_at", nullable = false)
@@ -33,12 +45,20 @@ public class Recommendation {
     protected Recommendation() {
     }
 
-    public Recommendation(TripRequest trip, City city, Integer score, BigDecimal estimate, String status, String explanation) {
+    public Recommendation(TripRequest trip, City city, Integer score, BigDecimal estimate, String status,
+                          String estimateStatus, String currency, String sourceName, String sourceUrl,
+                          Instant verifiedAt, String estimateNotes, String explanation) {
         this.trip = trip;
         this.city = city;
         this.score = score;
         this.estimatedTripBudget = estimate;
         this.budgetStatus = status;
+        this.budgetEstimateStatus = estimateStatus;
+        this.budgetCurrency = currency;
+        this.budgetSourceName = sourceName;
+        this.budgetSourceUrl = sourceUrl;
+        this.budgetVerifiedAt = verifiedAt;
+        this.budgetEstimateNotes = estimateNotes;
         this.explanation = explanation;
         this.generatedAt = Instant.now();
     }
@@ -49,6 +69,12 @@ public class Recommendation {
     public Integer getScore() { return score; }
     public BigDecimal getEstimatedTripBudget() { return estimatedTripBudget; }
     public String getBudgetStatus() { return budgetStatus; }
+    public String getBudgetEstimateStatus() { return budgetEstimateStatus; }
+    public String getBudgetCurrency() { return budgetCurrency; }
+    public String getBudgetSourceName() { return budgetSourceName; }
+    public String getBudgetSourceUrl() { return budgetSourceUrl; }
+    public Instant getBudgetVerifiedAt() { return budgetVerifiedAt; }
+    public String getBudgetEstimateNotes() { return budgetEstimateNotes; }
     public String getExplanation() { return explanation; }
     public Instant getGeneratedAt() { return generatedAt; }
 }
