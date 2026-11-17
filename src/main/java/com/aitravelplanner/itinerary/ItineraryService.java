@@ -147,8 +147,11 @@ public class ItineraryService {
                 """, UUID.class, tripId, destinationId,
                 "Séjour à " + destination.get("city") + " — " + durationDays + " jours");
 
-        List<List<Map<String, Object>>> dailyAssignments =
-                ItineraryGeographicPlanner.plan(candidates, durationDays, MAX_ITEMS_PER_DAY);
+        ItineraryGeographicPlanner.PlanningResult planning =
+                ItineraryGeographicPlanner.planWithUnplanned(candidates, durationDays, MAX_ITEMS_PER_DAY);
+        List<List<Map<String, Object>>> dailyAssignments = planning.days();
+        jdbc.update("UPDATE itineraries SET unplanned_item_count = ? WHERE id = ?",
+                planning.unplannedItems().size(), itineraryId);
         for (int day = 1; day <= durationDays; day++) {
             List<Map<String, Object>> dayItems = dailyAssignments.get(day - 1);
 
@@ -200,6 +203,7 @@ public class ItineraryService {
         List<Map<String, Object>> rows = jdbc.queryForList("""
                 SELECT i.id, i.trip_id AS "tripId", i.city_id AS "destinationId",
                        i.title, i.status, i.generated_at AS "generatedAt",
+                       i.unplanned_item_count AS "unplannedItemCount",
                        c.name AS city, co.name AS country, co.iso_code AS "countryCode"
                 FROM itineraries i
                 JOIN cities c ON c.id = i.city_id
@@ -246,6 +250,9 @@ public class ItineraryService {
         }
 
         itinerary.put("days", days);
+        int unplannedCount = ((Number) itinerary.get("unplannedItemCount")).intValue();
+        itinerary.put("planningWarnings", unplannedCount == 0 ? List.of()
+                : List.of(unplannedCount + " suggestion(s) n'ont pas été planifiée(s) en raison des limites de capacité ou de regroupement géographique. Elles ne sont pas supprimées du catalogue."));
         itinerary.put("dataQuality", ItineraryDataQuality.assessItinerary(days));
         itinerary.put("estimateDisclaimer",
                 "Les montants sont des estimations indicatives lorsqu'ils sont renseignés. Les éléments UNVERIFIED ne sont pas des informations confirmées. Vérifiez les tarifs, horaires, disponibilités et conditions auprès des sources officielles.");

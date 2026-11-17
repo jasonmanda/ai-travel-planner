@@ -16,7 +16,17 @@ final class ItineraryGeographicPlanner {
     private ItineraryGeographicPlanner() {
     }
 
+    record PlanningResult(
+            List<List<Map<String, Object>>> days,
+            List<Map<String, Object>> unplannedItems) {
+    }
+
     static List<List<Map<String, Object>>> plan(
+            List<Map<String, Object>> candidates, int dayCount, int maxItemsPerDay) {
+        return planWithUnplanned(candidates, dayCount, maxItemsPerDay).days();
+    }
+
+    static PlanningResult planWithUnplanned(
             List<Map<String, Object>> candidates,
             int dayCount,
             int maxItemsPerDay) {
@@ -89,10 +99,12 @@ final class ItineraryGeographicPlanner {
             days.add(new ArrayList<>());
         }
 
+        List<Map<String, Object>> unplanned = new ArrayList<>();
         int capacity = dayCount * maxItemsPerDay;
         int placed = 0;
         for (List<Map<String, Object>> group : groups) {
             if (placed + group.size() > capacity) {
+                unplanned.addAll(group);
                 continue;
             }
             int targetDay = -1;
@@ -105,13 +117,14 @@ final class ItineraryGeographicPlanner {
                 }
             }
             if (targetDay == -1) {
+                unplanned.addAll(group);
                 continue;
             }
             days.get(targetDay).addAll(group);
             placed += group.size();
         }
 
-        return days;
+        return new PlanningResult(days, List.copyOf(unplanned));
     }
 
     private static double minimumDistanceKm(
