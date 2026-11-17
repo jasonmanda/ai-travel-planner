@@ -179,6 +179,7 @@ DECLARE
     v_longitude_ok BOOLEAN;
     v_duration_ok BOOLEAN;
     v_verified_count INTEGER;
+    v_full_post_rejection BOOLEAN;
     v_new_status VARCHAR(30);
     v_last_verified_at TIMESTAMPTZ;
 BEGIN
