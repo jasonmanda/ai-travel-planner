@@ -127,11 +127,27 @@ BEGIN
          WHERE h.attraction_id = p_attraction_id
            AND h.id > COALESCE(v_latest_rejection_id, 0)
            AND h.verification_status IN ('VERIFIED', 'PARTIALLY_VERIFIED')
-           AND h.verified_values IS NOT NULL
-           AND h.verified_fields && ARRAY[
-               'name', 'description', 'category', 'latitude',
-               'longitude', 'estimated_duration_minutes'
-           ]::TEXT[];
+                      AND (
+                (h.verified_fields @> ARRAY['name']::TEXT[]
+                    AND h.verified_values ? 'name'
+                    AND h.verified_values -> 'name' = to_jsonb(v_item.name))
+                OR (h.verified_fields @> ARRAY['description']::TEXT[]
+                    AND h.verified_values ? 'description'
+                    AND h.verified_values -> 'description' = to_jsonb(v_item.description))
+                OR (h.verified_fields @> ARRAY['category']::TEXT[]
+                    AND h.verified_values ? 'category'
+                    AND h.verified_values -> 'category' = to_jsonb(v_item.category))
+                OR (h.verified_fields @> ARRAY['latitude']::TEXT[]
+                    AND h.verified_values ? 'latitude'
+                    AND h.verified_values -> 'latitude' = to_jsonb(v_item.latitude))
+                OR (h.verified_fields @> ARRAY['longitude']::TEXT[]
+                    AND h.verified_values ? 'longitude'
+                    AND h.verified_values -> 'longitude' = to_jsonb(v_item.longitude))
+                OR (h.verified_fields @> ARRAY['estimated_duration_minutes']::TEXT[]
+                    AND h.verified_values ? 'estimated_duration_minutes'
+                    AND h.verified_values -> 'estimated_duration_minutes'
+                        = to_jsonb(v_item.estimated_duration_minutes))
+            );
     ELSE
         v_last_verified_at := NULL;
     END IF;
@@ -262,11 +278,27 @@ BEGIN
          WHERE h.activity_id = p_activity_id
            AND h.id > COALESCE(v_latest_rejection_id, 0)
            AND h.verification_status IN ('VERIFIED', 'PARTIALLY_VERIFIED')
-           AND h.verified_values IS NOT NULL
-           AND h.verified_fields && ARRAY[
-               'name', 'description', 'category', 'latitude',
-               'longitude', 'estimated_duration_minutes'
-           ]::TEXT[];
+                      AND (
+                (h.verified_fields @> ARRAY['name']::TEXT[]
+                    AND h.verified_values ? 'name'
+                    AND h.verified_values -> 'name' = to_jsonb(v_item.name))
+                OR (h.verified_fields @> ARRAY['description']::TEXT[]
+                    AND h.verified_values ? 'description'
+                    AND h.verified_values -> 'description' = to_jsonb(v_item.description))
+                OR (h.verified_fields @> ARRAY['category']::TEXT[]
+                    AND h.verified_values ? 'category'
+                    AND h.verified_values -> 'category' = to_jsonb(v_item.category))
+                OR (h.verified_fields @> ARRAY['latitude']::TEXT[]
+                    AND h.verified_values ? 'latitude'
+                    AND h.verified_values -> 'latitude' = to_jsonb(v_item.latitude))
+                OR (h.verified_fields @> ARRAY['longitude']::TEXT[]
+                    AND h.verified_values ? 'longitude'
+                    AND h.verified_values -> 'longitude' = to_jsonb(v_item.longitude))
+                OR (h.verified_fields @> ARRAY['estimated_duration_minutes']::TEXT[]
+                    AND h.verified_values ? 'estimated_duration_minutes'
+                    AND h.verified_values -> 'estimated_duration_minutes'
+                        = to_jsonb(v_item.estimated_duration_minutes))
+            );
     ELSE
         v_last_verified_at := NULL;
     END IF;
