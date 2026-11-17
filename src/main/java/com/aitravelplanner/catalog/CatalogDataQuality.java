@@ -25,8 +25,12 @@ public final class CatalogDataQuality {
             warnings.add("SOURCE_MISSING");
         }
 
-        if ("VERIFIED".equalsIgnoreCase(String.valueOf(item.get("dataStatus")))) {
+        String dataStatus = String.valueOf(item.get("dataStatus"));
+        if ("VERIFIED".equalsIgnoreCase(dataStatus)) {
             score += 30;
+        } else if ("PARTIALLY_VERIFIED".equalsIgnoreCase(dataStatus)) {
+            score += 15;
+            warnings.add("PARTIALLY_VERIFIED");
         } else {
             warnings.add("NOT_VERIFIED");
         }
