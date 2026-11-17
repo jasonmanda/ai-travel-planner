@@ -1,7 +1,9 @@
 package com.aitravelplanner.catalog;
 
 import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Converts catalog source metadata into conservative, user-readable explanations.
@@ -17,8 +19,9 @@ public final class CatalogSourceTransparency {
         String dataStatus = value(item.get("dataStatus"), "UNVERIFIED");
         boolean documented = hasText(item.get("sourceName")) && isHttpUrl(item.get("sourceUrl"));
         String verificationLevel = verificationLevel(dataStatus, documented);
-        String sourceQuality = sourceQuality(sourceType, sourceScope, documented);
-        String sourceQualityReason = sourceQualityReason(sourceType, sourceScope, documented);
+        boolean specificOfficialSource = isSpecificOfficialSource(sourceType, sourceScope, item.get("sourceUrl"), documented);
+        String sourceQuality = sourceQuality(sourceType, sourceScope, documented, specificOfficialSource);
+        String sourceQualityReason = sourceQualityReason(sourceType, sourceScope, documented, specificOfficialSource);
 
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("sourceName", item.get("sourceName"));
@@ -44,7 +47,7 @@ public final class CatalogSourceTransparency {
         return result;
     }
 
-    private static String sourceQuality(String type, String scope, boolean documented) {
+    private static String sourceQuality(String type, String scope, boolean documented, boolean specificOfficialSource) {
         if (!documented) {
             return "NO_USABLE_SOURCE";
         }
@@ -57,7 +60,8 @@ public final class CatalogSourceTransparency {
         if ("ENCYCLOPEDIC".equalsIgnoreCase(type) || "GENERIC".equalsIgnoreCase(type)) {
             return "SECONDARY_REFERENCE_ONLY";
         }
-        if ("OFFICIAL".equalsIgnoreCase(type) && "ITEM_SPECIFIC".equalsIgnoreCase(scope)) {
+        if ("OFFICIAL".equalsIgnoreCase(type) && "ITEM_SPECIFIC".equalsIgnoreCase(scope)
+                && specificOfficialSource) {
             return "ITEM_SPECIFIC_PRIMARY_CANDIDATE";
         }
         return "SOURCE_REQUIRES_REVIEW";
@@ -74,7 +78,7 @@ public final class CatalogSourceTransparency {
         };
     }
 
-    private static String sourceQualityReason(String type, String scope, boolean documented) {
+    private static String sourceQualityReason(String type, String scope, boolean documented, boolean specificOfficialSource) {
         if (!documented) {
             return "Aucun couple nom de source et URL HTTP/HTTPS exploitable n’est enregistré. Cette fiche ne dispose donc pas d’appui documentaire utilisable.";
         }
@@ -90,8 +94,13 @@ public final class CatalogSourceTransparency {
         if ("GENERIC".equalsIgnoreCase(type)) {
             return "La source secondaire peut aider à identifier le lieu, mais ne constitue pas une confirmation institutionnelle des services, horaires, tarifs ou conditions actuelles.";
         }
-        if ("OFFICIAL".equalsIgnoreCase(type) && "ITEM_SPECIFIC".equalsIgnoreCase(scope)) {
-            return "La source est classée comme institutionnelle et spécifique à l’élément. Son contenu et les champs qu’elle étaye doivent néanmoins être contrôlés avant toute vérification factuelle.";
+        if ("OFFICIAL".equalsIgnoreCase(type) && "ITEM_SPECIFIC".equalsIgnoreCase(scope)
+                && !specificOfficialSource) {
+            return "La source est déclarée spécifique, mais son URL ressemble à une page d’accueil ou à une page générale de répertoire/information. Elle doit être examinée manuellement avant de servir de référence spécifique.";
+        }
+        if ("OFFICIAL".equalsIgnoreCase(type) && "ITEM_SPECIFIC".equalsIgnoreCase(scope)
+                && specificOfficialSource) {
+            return "La source est institutionnelle et son URL mène à une page dédiée à l’élément. Le contenu et les champs qu’elle étaye doivent néanmoins être contrôlés avant toute vérification factuelle.";
         }
         return "La nature ou la portée de la source ne permet pas encore de déterminer précisément les affirmations qu’elle étaye. Un examen manuel est nécessaire.";
     }
@@ -167,6 +176,35 @@ public final class CatalogSourceTransparency {
                 "Une source portant sur cet élément ne garantit pas que toutes les données de la fiche sont exactes ou à jour.",
                 "Les horaires, tarifs, accès, disponibilité et conditions actuelles doivent être vérifiés séparément."
         };
+    }
+
+    /**
+     * An official label and ITEM_SPECIFIC scope are not sufficient on their own.
+     * Reject homepages and known general directory/information paths. This is only
+     * a structural safeguard: a human must still review the actual page content.
+     */
+    private static boolean isSpecificOfficialSource(
+            String type, String scope, Object sourceUrl, boolean documented) {
+        if (!documented || !"OFFICIAL".equalsIgnoreCase(type)
+                || !"ITEM_SPECIFIC".equalsIgnoreCase(scope)) {
+            return false;
+        }
+        try {
+            java.net.URI uri = new java.net.URI(String.valueOf(sourceUrl).trim());
+            String path = uri.getPath();
+            if (path == null || path.isBlank() || "/".equals(path)) {
+                return false;
+            }
+            Set<String> generalPathSegments = Set.of(
+                    "attractions", "visitor-information", "useful-information",
+                    "visitor-tips", "patrimoine-materiel-national", "standards-catalogue"
+            );
+            return java.util.Arrays.stream(path.toLowerCase(Locale.ROOT).split("/"))
+                    .filter(segment -> !segment.isBlank())
+                    .noneMatch(generalPathSegments::contains);
+        } catch (java.net.URISyntaxException exception) {
+            return false;
+        }
     }
 
     private static boolean isHttpUrl(Object value) {

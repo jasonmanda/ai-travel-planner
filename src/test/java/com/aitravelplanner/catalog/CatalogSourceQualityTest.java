@@ -82,4 +82,52 @@ class CatalogSourceQualityTest {
         assertEquals("SECONDARY_REFERENCE_ONLY", result.get("sourceQuality"));
         assertFalse((Boolean) result.get("sourceSupportsRecommendation"));
     }
+
+    @Test
+    void officialHomepageCannotBeClassifiedAsItemSpecificPrimaryEvidence() {
+        Map<String, Object> result = CatalogSourceTransparency.describe(Map.of(
+                "sourceName", "Visit Zanzibar",
+                "sourceUrl", "https://visitzanzibar.go.tz/",
+                "sourceType", "OFFICIAL",
+                "sourceScope", "ITEM_SPECIFIC",
+                "dataStatus", "UNVERIFIED"
+        ));
+
+        assertEquals("SOURCE_REQUIRES_REVIEW", result.get("sourceQuality"));
+        assertFalse((Boolean) result.get("sourceSupportsRecommendation"));
+        assertFalse((Boolean) result.get("verified"));
+        assertTrue(String.valueOf(result.get("sourceQualityReason")).contains("page d’accueil"));
+    }
+
+    @Test
+    void officialItemSpecificPageRemainsOnlyACandidateUntilManualVerification() {
+        Map<String, Object> result = CatalogSourceTransparency.describe(Map.of(
+                "sourceName", "Jardin Majorelle",
+                "sourceUrl", "https://www.jardinmajorelle.com/lejardin/",
+                "sourceType", "OFFICIAL",
+                "sourceScope", "ITEM_SPECIFIC",
+                "dataStatus", "UNVERIFIED"
+        ));
+
+        assertEquals("ITEM_SPECIFIC_PRIMARY_CANDIDATE", result.get("sourceQuality"));
+        assertFalse((Boolean) result.get("sourceSupportsRecommendation"));
+        assertFalse((Boolean) result.get("verified"));
+    }
+
+    @Test
+    void officialNationalHeritageDirectoryCannotBeClassifiedAsItemSpecificEvidence() {
+        Map<String, Object> result = CatalogSourceTransparency.describe(Map.of(
+                "sourceName", "Ministry - National heritage directory",
+                "sourceUrl", "https://example.org/fr/departements/culture/patrimoine-materiel-national/",
+                "sourceType", "OFFICIAL",
+                "sourceScope", "ITEM_SPECIFIC",
+                "dataStatus", "UNVERIFIED"
+        ));
+
+        assertEquals("SOURCE_REQUIRES_REVIEW", result.get("sourceQuality"));
+        assertFalse((Boolean) result.get("sourceSupportsRecommendation"));
+        assertFalse((Boolean) result.get("verified"));
+        assertTrue(String.valueOf(result.get("sourceQualityReason")).contains("page générale"));
+    }
+
 }
