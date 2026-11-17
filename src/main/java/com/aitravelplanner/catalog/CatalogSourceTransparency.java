@@ -1,7 +1,9 @@
 package com.aitravelplanner.catalog;
 
 import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Converts catalog source metadata into conservative, user-readable explanations.
@@ -94,7 +96,7 @@ public final class CatalogSourceTransparency {
         }
         if ("OFFICIAL".equalsIgnoreCase(type) && "ITEM_SPECIFIC".equalsIgnoreCase(scope)
                 && !specificOfficialSource) {
-            return "La source est déclarée spécifique, mais son URL pointe vers une page d’accueil ou une URL sans chemin propre à l’élément. Elle doit être remplacée ou examinée manuellement avant de servir de référence spécifique.";
+            return "La source est déclarée spécifique, mais son URL ressemble à une page d’accueil ou à une page générale de répertoire/information. Elle doit être examinée manuellement avant de servir de référence spécifique.";
         }
         if ("OFFICIAL".equalsIgnoreCase(type) && "ITEM_SPECIFIC".equalsIgnoreCase(scope)
                 && specificOfficialSource) {
@@ -177,9 +179,9 @@ public final class CatalogSourceTransparency {
     }
 
     /**
-     * An official label and ITEM_SPECIFIC scope are not sufficient on their own:
-     * a homepage URL cannot substantiate a particular place or activity.
-     * This is a structural safeguard only; a human must still review page content.
+     * An official label and ITEM_SPECIFIC scope are not sufficient on their own.
+     * Reject homepages and known general directory/information paths. This is only
+     * a structural safeguard: a human must still review the actual page content.
      */
     private static boolean isSpecificOfficialSource(
             String type, String scope, Object sourceUrl, boolean documented) {
@@ -190,7 +192,16 @@ public final class CatalogSourceTransparency {
         try {
             java.net.URI uri = new java.net.URI(String.valueOf(sourceUrl).trim());
             String path = uri.getPath();
-            return path != null && !path.isBlank() && !"/".equals(path);
+            if (path == null || path.isBlank() || "/".equals(path)) {
+                return false;
+            }
+            Set<String> generalPathSegments = Set.of(
+                    "attractions", "visitor-information", "useful-information",
+                    "visitor-tips", "patrimoine-materiel-national", "standards-catalogue"
+            );
+            return java.util.Arrays.stream(path.toLowerCase(Locale.ROOT).split("/"))
+                    .filter(segment -> !segment.isBlank())
+                    .noneMatch(generalPathSegments::contains);
         } catch (java.net.URISyntaxException exception) {
             return false;
         }
