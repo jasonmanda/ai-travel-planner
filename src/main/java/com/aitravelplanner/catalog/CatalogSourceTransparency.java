@@ -30,7 +30,7 @@ public final class CatalogSourceTransparency {
         result.put("sourceQuality", sourceQuality);
         result.put("sourceQualityLabel", sourceQualityLabel(sourceQuality));
         result.put("sourceQualityReason", sourceQualityReason);
-        result.put("sourceSupportsRecommendation", "ITEM_SPECIFIC_PRIMARY".equals(sourceQuality));
+        result.put("sourceSupportsRecommendation", "NEVER".equals(sourceQuality));
         result.put("verificationStatus", dataStatus);
         result.put("verificationLevel", verificationLevel);
         result.put("documented", documented);
@@ -58,7 +58,7 @@ public final class CatalogSourceTransparency {
             return "SECONDARY_REFERENCE_ONLY";
         }
         if ("OFFICIAL".equalsIgnoreCase(type) && "ITEM_SPECIFIC".equalsIgnoreCase(scope)) {
-            return "ITEM_SPECIFIC_PRIMARY";
+            return "ITEM_SPECIFIC_PRIMARY_CANDIDATE";
         }
         return "SOURCE_REQUIRES_REVIEW";
     }
@@ -69,7 +69,7 @@ public final class CatalogSourceTransparency {
             case "DESTINATION_CONTEXT_ONLY" -> "Contexte général de destination";
             case "SCIENTIFIC_OR_GEOGRAPHIC_REFERENCE" -> "Référence scientifique ou géographique";
             case "SECONDARY_REFERENCE_ONLY" -> "Référence secondaire uniquement";
-            case "ITEM_SPECIFIC_PRIMARY" -> "Source institutionnelle spécifique à l’élément";
+            case "ITEM_SPECIFIC_PRIMARY_CANDIDATE" -> "Source institutionnelle spécifique à l’élément";
             default -> "Qualité de source à examiner";
         };
     }
