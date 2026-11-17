@@ -127,14 +127,11 @@ public class ItineraryService {
         List<Map<String, Object>> deduplicatedCandidates =
                 CatalogDeduplication.removeSemanticDuplicates(rawCandidates);
         List<Map<String, Object>> candidates = new ArrayList<>();
-        Map<String, Integer> exclusionReasons = new LinkedHashMap<>();
         for (Map<String, Object> candidate : deduplicatedCandidates) {
             CatalogRecommendationEligibility.Evaluation evaluation =
                     CatalogRecommendationEligibility.evaluate(candidate);
             if (evaluation.eligible()) {
                 candidates.add(candidate);
-            } else {
-                evaluation.reasons().forEach(reason -> exclusionReasons.merge(reason, 1, Integer::sum));
             }
         }
         int excludedCandidateCount = deduplicatedCandidates.size() - candidates.size();
