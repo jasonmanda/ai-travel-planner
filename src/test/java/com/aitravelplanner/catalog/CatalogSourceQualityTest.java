@@ -113,4 +113,21 @@ class CatalogSourceQualityTest {
         assertFalse((Boolean) result.get("sourceSupportsRecommendation"));
         assertFalse((Boolean) result.get("verified"));
     }
+
+    @Test
+    void officialNationalHeritageDirectoryCannotBeClassifiedAsItemSpecificEvidence() {
+        Map<String, Object> result = CatalogSourceTransparency.describe(Map.of(
+                "sourceName", "Ministry - National heritage directory",
+                "sourceUrl", "https://example.org/fr/departements/culture/patrimoine-materiel-national/",
+                "sourceType", "OFFICIAL",
+                "sourceScope", "ITEM_SPECIFIC",
+                "dataStatus", "UNVERIFIED"
+        ));
+
+        assertEquals("SOURCE_REQUIRES_REVIEW", result.get("sourceQuality"));
+        assertFalse((Boolean) result.get("sourceSupportsRecommendation"));
+        assertFalse((Boolean) result.get("verified"));
+        assertTrue(String.valueOf(result.get("sourceQualityReason")).contains("page générale"));
+    }
+
 }
