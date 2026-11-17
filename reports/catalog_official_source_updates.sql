@@ -99,8 +99,8 @@ UPDATE activities act
    SET source_name = 'Jardin Majorelle - site officiel',
        source_url = 'https://www.jardinmajorelle.com/lejardin/',
        source_type = 'OFFICIAL',
-       source_scope = 'ITEM_SPECIFIC',
-       verification_notes = 'Page officielle du Jardin Majorelle. Cette référence correspond à ce jardin précis; elle ne permet pas de généraliser ses horaires ou tarifs à tous les jardins de Marrakech.'
+       source_scope = 'DESTINATION_GENERAL',
+       verification_notes = 'Page officielle du Jardin Majorelle, qui documente ce jardin précis. La fiche étant formulée comme une visite de jardin générique, cette référence ne permet pas de valider une activité générique ni de généraliser à tous les jardins de Marrakech.'
   FROM cities c JOIN countries co ON co.id = c.country_id
  WHERE act.city_id = c.id AND c.name = 'Marrakech' AND co.iso_code = 'MA'
    AND act.name = 'Visite de jardin';
@@ -150,18 +150,18 @@ UPDATE attractions
 
 UPDATE attractions
    SET source_name = 'Jozani Chwaka Bay National Park - site officiel du gouvernement de Zanzibar',
-       source_url = 'https://maliasilismz.go.tz/contact.php',
+       source_url = 'https://maliasilismz.go.tz/',
        source_type = 'OFFICIAL',
-       source_scope = 'ITEM_SPECIFIC',
-       verification_notes = 'Site officiel du parc national de Jozani Chwaka Bay, avec informations sur le parc, ses habitats et les expériences visiteurs. Les horaires, tarifs et conditions d’accès doivent être vérifiés directement auprès du parc.'
+       source_scope = 'DESTINATION_GENERAL',
+       verification_notes = 'Site officiel consacré au parc national de Jozani Chwaka Bay. La page d’accueil présente des actualités et informations générales du parc, mais ne confirme pas les modalités propres à cette fiche, les horaires, tarifs ou conditions d’accès.'
  WHERE source_url = 'https://www.antweb.org/locality.do?code=CEPF-TZ-10';
 
 UPDATE activities
    SET source_name = 'Jozani Chwaka Bay National Park - site officiel du gouvernement de Zanzibar',
-       source_url = 'https://maliasilismz.go.tz/contact.php',
+       source_url = 'https://maliasilismz.go.tz/',
        source_type = 'OFFICIAL',
-       source_scope = 'ITEM_SPECIFIC',
-       verification_notes = 'Site officiel du parc national de Jozani Chwaka Bay. Il documente le site et les activités de découverte, sans confirmer un itinéraire précis, une durée ou un tarif pour cette fiche.'
+       source_scope = 'DESTINATION_GENERAL',
+       verification_notes = 'Site officiel consacré au parc national de Jozani Chwaka Bay. La page d’accueil apporte un contexte sur le parc, mais ne confirme pas un itinéraire précis, une durée, un tarif ou les modalités propres à cette activité.'
  WHERE source_url = 'https://www.antweb.org/locality.do?code=CEPF-TZ-10';
 
 UPDATE attractions
