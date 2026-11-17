@@ -107,3 +107,37 @@ curl -X POST http://localhost:8080/api/v1/trips/REPLACE_WITH_TRIP_UUID/recommend
 ```
 
 The returned recommendations include a score breakdown and explicit warnings about criteria that are not evaluated. The engine is deterministic and does not call OpenAI yet.
+
+
+## Vérification administrative des budgets journaliers (V21)
+
+Le endpoint suivant permet à un administrateur de vérifier le budget journalier d'une ville :
+
+`POST /api/v1/admin/catalog/cities/{id}/budget-verifications`
+
+Il exige une authentification HTTP Basic avec le rôle `ADMIN`. Configurez `APP_ADMIN_USERNAME` et `APP_ADMIN_PASSWORD` avant de démarrer l'application.
+
+Exemple de corps JSON :
+
+```json
+{
+  "dailyBudget": 52000.00,
+  "currency": "XOF",
+  "sourceName": "Office national du tourisme",
+  "sourceUrl": "https://example.org/city-budget-source",
+  "verificationNotes": "Budget journalier contrôlé pour un voyageur, hors transport international."
+}
+```
+
+La requête enregistre un instantané dans `city_budget_verification_history`, puis met à jour la ville en `VERIFIED` dans la même transaction. L'historique est append-only : une correction doit créer un nouvel événement, jamais modifier ou supprimer l'ancien.
+
+La migration `V21__add_city_budget_verification_history.sql` doit être appliquée manuellement après V20. Elle ne valide aucune ville existante.
+
+
+## Instantané des budgets dans les recommandations (V22)
+
+Chaque recommandation conserve désormais le montant total estimé, la devise, le statut de confiance, la source, l'URL, la date de vérification et les notes tels qu'ils existaient au moment de sa génération. Une vérification ultérieure du budget d'une ville ne réécrit donc pas l'historique des recommandations déjà enregistrées.
+
+Les anciennes recommandations ne sont pas rétroactivement qualifiées : leurs champs d'instantané restent NULL lorsque l'état historique ne peut pas être établi de façon fiable.
+
+Appliquer manuellement `V22__snapshot_recommendation_budget_metadata.sql` après V21.

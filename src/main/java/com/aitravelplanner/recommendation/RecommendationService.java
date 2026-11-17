@@ -5,7 +5,6 @@ import com.aitravelplanner.destination.City;
 import com.aitravelplanner.destination.CityRepository;
 import com.aitravelplanner.trip.TripRequest;
 import com.aitravelplanner.trip.TripRequestRepository;
-import com.aitravelplanner.trip.TripService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,8 +40,6 @@ public class RecommendationService {
         List<String> interests = split(trip.getInterests());
         int travellers = trip.getAdults() + trip.getChildren();
 
-        // Replace the previous result set so retries and changed criteria remain safe.
-        // Flush the deletes before inserting rows protected by the (trip_id, city_id) unique constraint.
         recommendations.deleteByTripId(tripId);
         recommendations.flush();
 
@@ -57,12 +54,17 @@ public class RecommendationService {
                     ? NEUTRAL_SCORE
                     : percentage(matchedInterests.size(), interests.size());
 
-            BigDecimal estimatedTripBudget = city.getEstimatedDailyBudget()
-                    .multiply(BigDecimal.valueOf(trip.getDurationDays()))
-                    .multiply(BigDecimal.valueOf(travellers))
-                    .setScale(0, RoundingMode.HALF_UP);
+            boolean hasEstimate = city.getEstimatedDailyBudget() != null
+                    && city.getEstimatedDailyBudgetCurrency() != null;
+            BigDecimal estimatedTripBudget = hasEstimate
+                    ? city.getEstimatedDailyBudget()
+                        .multiply(BigDecimal.valueOf(trip.getDurationDays()))
+                        .multiply(BigDecimal.valueOf(travellers))
+                        .setScale(0, RoundingMode.HALF_UP)
+                    : null;
 
-            boolean comparableCurrency = city.getEstimatedDailyBudgetCurrency() != null
+            boolean verifiedEstimate = "VERIFIED".equals(city.getEstimatedDailyBudgetStatus());
+            boolean comparableCurrency = verifiedEstimate && hasEstimate
                     && city.getEstimatedDailyBudgetCurrency().equalsIgnoreCase(trip.getCurrency());
 
             int budgetScore = comparableCurrency
@@ -71,18 +73,32 @@ public class RecommendationService {
 
             int styleScore = calculateStyleScore(trip.getTravelStyle(), tags);
             int preferenceScore = calculatePreferenceScore(trip.getPreferredDestination(), city);
-
             int totalScore = weightedScore(interestScore, budgetScore, styleScore, preferenceScore);
-            String budgetStatus = !comparableCurrency
-                    ? "CURRENCY_NOT_COMPARABLE"
-                    : estimatedTripBudget.compareTo(trip.getBudget()) <= 0
-                    ? "WITHIN_BUDGET" : "OVER_BUDGET_ESTIMATE";
 
-            String explanation = buildExplanation(matchedInterests, interests, comparableCurrency,
-                    budgetStatus, trip.getTravelStyle(), trip.getPreferredDestination());
+            String budgetStatus;
+            if (!hasEstimate) {
+                budgetStatus = "ESTIMATE_NOT_AVAILABLE";
+            } else if (!verifiedEstimate) {
+                budgetStatus = "INDICATIVE_NOT_USED_IN_SCORE";
+            } else if (!comparableCurrency) {
+                budgetStatus = "CURRENCY_NOT_COMPARABLE";
+            } else {
+                budgetStatus = estimatedTripBudget.compareTo(trip.getBudget()) <= 0
+                        ? "WITHIN_BUDGET" : "OVER_BUDGET_ESTIMATE";
+            }
+
+            String explanation = buildExplanation(matchedInterests, interests, budgetStatus,
+                    trip.getTravelStyle(), trip.getPreferredDestination());
 
             Recommendation saved = recommendations.save(new Recommendation(
-                    trip, city, totalScore, estimatedTripBudget, budgetStatus, explanation));
+                    trip, city, totalScore, estimatedTripBudget, budgetStatus,
+                    city.getEstimatedDailyBudgetStatus(),
+                    city.getEstimatedDailyBudgetCurrency(),
+                    city.getEstimatedDailyBudgetSourceName(),
+                    city.getEstimatedDailyBudgetSourceUrl(),
+                    city.getEstimatedDailyBudgetVerifiedAt(),
+                    city.getEstimatedDailyBudgetNotes(),
+                    explanation));
 
             Map<String, Object> item = new LinkedHashMap<>();
             item.put("id", saved.getId());
@@ -97,14 +113,23 @@ public class RecommendationService {
                     "travelStyle", styleScore,
                     "preferredDestination", preferenceScore));
             item.put("estimatedTripBudget", estimatedTripBudget);
-            item.put("currency", city.getEstimatedDailyBudgetCurrency());
+            item.put("currency", saved.getBudgetCurrency());
+            item.put("budgetEstimateStatus", saved.getBudgetEstimateStatus());
+            item.put("budgetSourceName", saved.getBudgetSourceName());
+            item.put("budgetSourceUrl", saved.getBudgetSourceUrl());
+            item.put("budgetVerifiedAt", saved.getBudgetVerifiedAt());
+            item.put("budgetEstimateNotes", saved.getBudgetEstimateNotes());
             item.put("requestedBudget", trip.getBudget());
             item.put("requestedBudgetCurrency", trip.getCurrency());
             item.put("budgetStatus", budgetStatus);
             item.put("matchedInterests", matchedInterests);
             item.put("explanation", explanation);
-            item.put("estimateBasis", "Budget journalier catalogue × durée × nombre de voyageurs");
-            item.put("estimateLimitations", "Estimation indicative. Le catalogue ne détaille pas encore les composantes incluses; vols, hébergement, repas, activités et formalités doivent être vérifiés séparément.");
+            item.put("estimateBasis", hasEstimate
+                    ? "Budget journalier catalogue × durée × nombre de voyageurs"
+                    : null);
+            item.put("estimateLimitations", saved.getBudgetEstimateNotes() != null
+                    ? saved.getBudgetEstimateNotes()
+                    : "Le périmètre des dépenses incluses n'est pas documenté; vols, hébergement, repas, activités et formalités doivent être vérifiés séparément.");
             item.put("notEvaluatedCriteria", List.of("nationality_and_entry_formalities", "travel_period_and_seasonality", "departure_transport_cost", "destination_scope"));
             item.put("latitude", city.getLatitude());
             item.put("longitude", city.getLongitude());
@@ -131,7 +156,12 @@ public class RecommendationService {
             item.put("countryCode", city.getCountry().getIsoCode());
             item.put("score", r.getScore());
             item.put("estimatedTripBudget", r.getEstimatedTripBudget());
-            item.put("currency", city.getEstimatedDailyBudgetCurrency());
+            item.put("currency", r.getBudgetCurrency());
+            item.put("budgetEstimateStatus", r.getBudgetEstimateStatus());
+            item.put("budgetSourceName", r.getBudgetSourceName());
+            item.put("budgetSourceUrl", r.getBudgetSourceUrl());
+            item.put("budgetVerifiedAt", r.getBudgetVerifiedAt());
+            item.put("budgetEstimateNotes", r.getBudgetEstimateNotes());
             item.put("budgetStatus", r.getBudgetStatus());
             item.put("explanation", r.getExplanation());
             item.put("generatedAt", r.getGeneratedAt());
@@ -183,18 +213,24 @@ public class RecommendationService {
                 + preference * PREFERENCE_WEIGHT) / 100.0);
     }
 
-    private String buildExplanation(List<String> matched, List<String> requested,
-                                    boolean comparableCurrency, String budgetStatus,
+    private String buildExplanation(List<String> matched, List<String> requested, String budgetStatus,
                                     String style, String preferred) {
         List<String> reasons = new ArrayList<>();
         if (requested.isEmpty()) reasons.add("aucun intérêt particulier n'a été renseigné");
         else if (matched.isEmpty()) reasons.add("aucun intérêt renseigné ne correspond aux tags de cette destination");
         else reasons.add("intérêts correspondants : " + String.join(", ", matched));
 
-        if (!comparableCurrency)
-            reasons.add("budget non comparé : la devise du catalogue et celle de la demande sont différentes");
-        else if ("WITHIN_BUDGET".equals(budgetStatus)) reasons.add("estimation catalogue dans le budget demandé");
-        else reasons.add("estimation catalogue supérieure au budget demandé");
+        switch (budgetStatus) {
+            case "ESTIMATE_NOT_AVAILABLE" ->
+                    reasons.add("aucune estimation de budget journalier disponible; critère neutre dans le score");
+            case "INDICATIVE_NOT_USED_IN_SCORE" ->
+                    reasons.add("budget indicatif affiché à titre informatif et exclu du score faute de vérification");
+            case "CURRENCY_NOT_COMPARABLE" ->
+                    reasons.add("budget vérifié mais non comparé : les devises sont différentes");
+            case "WITHIN_BUDGET" -> reasons.add("estimation vérifiée dans le budget demandé");
+            case "OVER_BUDGET_ESTIMATE" -> reasons.add("estimation vérifiée supérieure au budget demandé");
+            default -> reasons.add("budget non évalué");
+        }
 
         if (style != null && !style.isBlank())
             reasons.add("style de voyage pris en compte à partir des tags du catalogue");

@@ -31,6 +31,11 @@ public class DestinationController {
             m.put("description", c.getDescription());
             m.put("estimatedDailyBudget", c.getEstimatedDailyBudget());
             m.put("currency", c.getEstimatedDailyBudgetCurrency());
+            m.put("budgetEstimateStatus", c.getEstimatedDailyBudgetStatus());
+            m.put("budgetSourceName", c.getEstimatedDailyBudgetSourceName());
+            m.put("budgetSourceUrl", c.getEstimatedDailyBudgetSourceUrl());
+            m.put("budgetVerifiedAt", c.getEstimatedDailyBudgetVerifiedAt());
+            m.put("budgetEstimateNotes", c.getEstimatedDailyBudgetNotes());
             m.put("countryCurrency", c.getCountry().getCurrencyCode());
             m.put("tags", c.getTags() == null ? List.of() : Arrays.stream(c.getTags().split(",")).map(String::trim).toList());
             m.put("latitude", c.getLatitude());
