@@ -21,7 +21,7 @@ public final class CatalogSourceTransparency {
         String verificationLevel = verificationLevel(dataStatus, documented);
         boolean specificOfficialSource = isSpecificOfficialSource(sourceType, sourceScope, item.get("sourceUrl"), documented);
         String sourceQuality = sourceQuality(sourceType, sourceScope, documented, specificOfficialSource);
-        String sourceQualityReason = sourceQualityReason(sourceType, sourceScope, documented, specificOfficialSource);
+        String sourceQualityReason = sourceQualityReason(sourceType, sourceScope, item.get("sourceUrl"), documented, specificOfficialSource);
 
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("sourceName", item.get("sourceName"));
@@ -78,7 +78,7 @@ public final class CatalogSourceTransparency {
         };
     }
 
-    private static String sourceQualityReason(String type, String scope, boolean documented, boolean specificOfficialSource) {
+    private static String sourceQualityReason(String type, String scope, Object sourceUrl, boolean documented, boolean specificOfficialSource) {
         if (!documented) {
             return "Aucun couple nom de source et URL HTTP/HTTPS exploitable n’est enregistré. Cette fiche ne dispose donc pas d’appui documentaire utilisable.";
         }
