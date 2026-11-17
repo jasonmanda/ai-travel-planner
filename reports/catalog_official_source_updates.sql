@@ -150,7 +150,7 @@ UPDATE attractions
 
 UPDATE attractions
    SET source_name = 'Jozani Chwaka Bay National Park - site officiel du gouvernement de Zanzibar',
-       source_url = 'https://maliasilismz.go.tz/',
+       source_url = 'https://maliasilismz.go.tz/contact.php',
        source_type = 'OFFICIAL',
        source_scope = 'ITEM_SPECIFIC',
        verification_notes = 'Site officiel du parc national de Jozani Chwaka Bay, avec informations sur le parc, ses habitats et les expériences visiteurs. Les horaires, tarifs et conditions d’accès doivent être vérifiés directement auprès du parc.'
@@ -158,11 +158,19 @@ UPDATE attractions
 
 UPDATE activities
    SET source_name = 'Jozani Chwaka Bay National Park - site officiel du gouvernement de Zanzibar',
-       source_url = 'https://maliasilismz.go.tz/',
+       source_url = 'https://maliasilismz.go.tz/contact.php',
        source_type = 'OFFICIAL',
        source_scope = 'ITEM_SPECIFIC',
        verification_notes = 'Site officiel du parc national de Jozani Chwaka Bay. Il documente le site et les activités de découverte, sans confirmer un itinéraire précis, une durée ou un tarif pour cette fiche.'
  WHERE source_url = 'https://www.antweb.org/locality.do?code=CEPF-TZ-10';
+
+UPDATE attractions
+   SET source_name = 'Visit Zanzibar - official tourism portal',
+       source_url = 'https://visitzanzibar.go.tz/',
+       source_type = 'OFFICIAL',
+       source_scope = 'DESTINATION_GENERAL',
+       verification_notes = 'Le portail officiel de Zanzibar présente le Forodhani Night Market comme expérience touristique. La page d’accueil ne confirme pas les horaires, jours, vendeurs ou conditions propres aux jardins; cette référence reste contextuelle.'
+ WHERE source_url = 'https://www.avygeo.com/en/activities/78757-forodhani-gardens';
 
 UPDATE activities
    SET source_name = 'Visit Zanzibar - official tourism portal',
