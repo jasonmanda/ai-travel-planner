@@ -182,4 +182,36 @@ class CatalogSourceQualityTest {
         }
     }
 
+    @Test
+    void dedicatedJozaniParkAuthorityHomepageCanBeItemSpecific() {
+        Map<String, Object> result = CatalogSourceTransparency.describe(Map.of(
+                "sourceName", "Jozani Chwaka Bay National Park",
+                "sourceUrl", "https://maliasilismz.go.tz/",
+                "sourceType", "OFFICIAL",
+                "sourceScope", "ITEM_SPECIFIC",
+                "dataStatus", "UNVERIFIED"
+        ));
+
+        assertEquals("ITEM_SPECIFIC_PRIMARY_CANDIDATE", result.get("sourceQuality"));
+        assertFalse((Boolean) result.get("sourceSupportsRecommendation"));
+        assertFalse((Boolean) result.get("verified"));
+    }
+
+    @Test
+    void operatorPrimarySourceIsDistinctFromInstitutionalEvidence() {
+        Map<String, Object> result = CatalogSourceTransparency.describe(Map.of(
+                "sourceName", "Safari Blue - Original Experience",
+                "sourceUrl", "https://safariblue.net/tours/original-experience/",
+                "sourceType", "OPERATOR_PRIMARY",
+                "sourceScope", "ITEM_SPECIFIC",
+                "dataStatus", "UNVERIFIED"
+        ));
+
+        assertEquals("OPERATOR_PRIMARY_CANDIDATE", result.get("sourceQuality"));
+        assertEquals("Source primaire publiée par un opérateur touristique", result.get("sourceTypeLabel"));
+        assertFalse((Boolean) result.get("sourceSupportsRecommendation"));
+        assertFalse((Boolean) result.get("verified"));
+        assertTrue(String.valueOf(result.get("sourceQualityReason")).contains("source primaire"));
+    }
+
 }
