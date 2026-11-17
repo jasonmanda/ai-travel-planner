@@ -31,6 +31,19 @@ class CatalogDataQualityTest {
     }
 
     @Test
+    void givesPartialVerificationLessWeightThanFullVerification() {
+        Map<String, Object> item = item();
+        item.put("dataStatus", "PARTIALLY_VERIFIED");
+        item.put("sourceUrl", "https://example.org/source");
+
+        Map<String, Object> quality = CatalogDataQuality.assess(item);
+
+        assertEquals(35, quality.get("score"));
+        assertTrue(((List<?>) quality.get("warnings")).contains("PARTIALLY_VERIFIED"));
+        assertTrue(!((List<?>) quality.get("warnings")).contains("NOT_VERIFIED"));
+    }
+
+    @Test
     void reportsMissingFieldsWithoutInventingValues() {
         Map<String, Object> quality = CatalogDataQuality.assess(item());
 
