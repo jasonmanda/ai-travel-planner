@@ -79,10 +79,10 @@ public final class CatalogSourceTransparency {
         }
         if (documented) {
             return source + ". " + coverage
-                    + ". La source est documentée, mais aucune vérification factuelle des champs de cette fiche n'est enregistrée.";
+                    + ". La source est documentée, mais elle ne confirme pas à elle seule l'exactitude des informations de cette fiche ; aucune vérification factuelle des champs n'est enregistrée.";
         }
         return source + ". " + coverage
-                + ". Aucune source exploitable n'est enregistrée et les informations de cette fiche ne sont pas vérifiées.";
+                + ". Aucune source exploitable n'est enregistrée ; aucune source ne confirme les informations de cette fiche, qui restent non vérifiées.";
     }
 
     private static String[] limitations(
