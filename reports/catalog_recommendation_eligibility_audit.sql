@@ -25,10 +25,25 @@ WITH catalog_items AS (
         a.source_url,
         a.source_type,
         a.source_scope,
-        a.last_verified_at
+        a.last_verified_at,
+        CASE
+          WHEN pv.verification_status = 'VERIFIED'
+           AND pv.verified_fields @> ARRAY['estimated_visit_cost', 'cost_currency']::TEXT[]
+           AND pv.verified_price = a.estimated_visit_cost
+           AND pv.verified_currency = a.cost_currency THEN TRUE
+          ELSE FALSE
+        END AS price_verified
     FROM attractions a
     JOIN cities c ON c.id = a.city_id
     JOIN countries co ON co.id = c.country_id
+    LEFT JOIN LATERAL (
+        SELECT h.verification_status, h.verified_fields, h.verified_price, h.verified_currency
+        FROM attraction_verification_history h
+        WHERE h.attraction_id = a.id
+          AND h.verified_fields && ARRAY['estimated_visit_cost', 'cost_currency']::TEXT[]
+        ORDER BY h.verified_at DESC, h.id DESC
+        LIMIT 1
+    ) pv ON TRUE
     WHERE a.active = TRUE AND a.data_status <> 'REJECTED'
 
     UNION ALL
@@ -53,10 +68,25 @@ WITH catalog_items AS (
         act.source_url,
         act.source_type,
         act.source_scope,
-        act.last_verified_at
+        act.last_verified_at,
+        CASE
+          WHEN pv.verification_status = 'VERIFIED'
+           AND pv.verified_fields @> ARRAY['estimated_cost', 'cost_currency']::TEXT[]
+           AND pv.verified_price = act.estimated_cost
+           AND pv.verified_currency = act.cost_currency THEN TRUE
+          ELSE FALSE
+        END AS price_verified
     FROM activities act
     JOIN cities c ON c.id = act.city_id
     JOIN countries co ON co.id = c.country_id
+    LEFT JOIN LATERAL (
+        SELECT h.verification_status, h.verified_fields, h.verified_price, h.verified_currency
+        FROM activity_verification_history h
+        WHERE h.activity_id = act.id
+          AND h.verified_fields && ARRAY['estimated_cost', 'cost_currency']::TEXT[]
+        ORDER BY h.verified_at DESC, h.id DESC
+        LIMIT 1
+    ) pv ON TRUE
     WHERE act.active = TRUE AND act.data_status <> 'REJECTED'
 ),
 classified AS (
@@ -110,7 +140,8 @@ assessed AS (
                  THEN 'NAME_AND_CATEGORY_REQUIRED' END
         ], NULL) AS exclusion_reasons,
         CASE WHEN estimated_cost IS NULL THEN 'PRICE_NOT_AVAILABLE'
-             ELSE 'PRICE_REQUIRES_INDEPENDENT_VERIFICATION' END AS price_review,
+             WHEN price_verified THEN 'PRICE_VERIFIED'
+             ELSE 'PRICE_ESTIMATE_ONLY' END AS price_review,
         ARRAY[
             'OPENING_HOURS_NOT_MODELED',
             'ACCESS_CONDITIONS_NOT_MODELED',
