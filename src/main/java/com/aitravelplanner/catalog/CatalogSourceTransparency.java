@@ -224,6 +224,9 @@ public final class CatalogSourceTransparency {
             return false;
         }
         String normalizedHost = host.toLowerCase(Locale.ROOT);
+        if (normalizedHost.startsWith("www.")) {
+            normalizedHost = normalizedHost.substring(4);
+        }
         String normalizedPath = path.toLowerCase(Locale.ROOT);
         if ("whc.unesco.org".equals(normalizedHost)) {
             return normalizedPath.equals("/en/list/173")
