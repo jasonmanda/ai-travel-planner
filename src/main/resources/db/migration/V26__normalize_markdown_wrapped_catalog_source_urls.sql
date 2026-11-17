@@ -11,15 +11,6 @@ WITH attraction_candidates AS (
            ) AS url_parts
       FROM attractions
      WHERE source_url ~ '^\[https?://[^]]+\]\(https?://[^)]+\)$'
-),
-activity_candidates AS (
-    SELECT id,
-           regexp_match(
-               source_url,
-               '^\[(https?://[^]]+)\]\((https?://[^)]+)\)$'
-           ) AS url_parts
-      FROM activities
-     WHERE source_url ~ '^\[https?://[^]]+\]\(https?://[^)]+\)$'
 )
 UPDATE attractions a
    SET source_url = c.url_parts[1]
