@@ -114,7 +114,6 @@ classified AS (
              OR lower(source_url) LIKE '%sanparks.org/parks/table-mountain'
              OR lower(source_url) LIKE '%tanzaniatourism.go.tz/%chan-2024-participant-guidebook%'
              OR lower(source_url) LIKE '%nishati.go.tz/%eapce25%'
-             OR lower(source_url) LIKE '%zanzibarassembly.go.tz/storage/documents/committees/all/1677484498.pdf%'
            )
             THEN 'SOURCE_REQUIRES_REVIEW'
           WHEN source_type = 'OFFICIAL' AND source_scope = 'ITEM_SPECIFIC'
@@ -206,7 +205,6 @@ classified AS (
              OR lower(source_url) LIKE '%sanparks.org/parks/table-mountain'
              OR lower(source_url) LIKE '%tanzaniatourism.go.tz/%chan-2024-participant-guidebook%'
              OR lower(source_url) LIKE '%nishati.go.tz/%eapce25%'
-             OR lower(source_url) LIKE '%zanzibarassembly.go.tz/storage/documents/committees/all/1677484498.pdf%'
            )
             THEN 'SOURCE_REQUIRES_REVIEW'
           WHEN source_type = 'OFFICIAL' AND source_scope = 'ITEM_SPECIFIC'
