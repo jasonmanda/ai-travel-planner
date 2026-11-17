@@ -34,7 +34,7 @@ classified AS (
                THEN 'SECONDARY_REFERENCE_ONLY'
              WHEN source_type = 'OFFICIAL'
               AND source_scope = 'ITEM_SPECIFIC'
-              AND source_url ~* '(^|/)(attractions|visitor-information|useful-information|visitor-tips|patrimoine-materiel-national|standards-catalogue)(/|[?#]|$)'
+              AND source_url ~* '/(attractions|visitor-information|useful-information|visitor-tips|patrimoine-materiel-national|standards-catalogue)/?([?#].*)?
                THEN 'SOURCE_REQUIRES_REVIEW'
              WHEN source_type = 'OFFICIAL' AND source_scope = 'ITEM_SPECIFIC'
                THEN 'ITEM_SPECIFIC_PRIMARY_CANDIDATE'
@@ -71,6 +71,66 @@ classified AS (
              WHEN source_type = 'OFFICIAL'
               AND source_scope = 'ITEM_SPECIFIC'
               AND source_url ~* '(^|/)(attractions|visitor-information|useful-information|visitor-tips|patrimoine-materiel-national|standards-catalogue)(/|[?#]|$)'
+               THEN 'SOURCE_REQUIRES_REVIEW'
+             WHEN source_type = 'OFFICIAL' AND source_scope = 'ITEM_SPECIFIC'
+               THEN 'ITEM_SPECIFIC_PRIMARY_CANDIDATE'
+             ELSE 'SOURCE_REQUIRES_REVIEW'
+           END AS source_quality
+      FROM catalog_items
+)
+SELECT source_quality, data_status, COUNT(*) AS item_count
+  FROM classified
+ GROUP BY source_quality, data_status
+ ORDER BY source_quality, data_status;
+
+               THEN 'SOURCE_REQUIRES_REVIEW'
+             WHEN source_type = 'OFFICIAL' AND source_scope = 'ITEM_SPECIFIC'
+               THEN 'ITEM_SPECIFIC_PRIMARY_CANDIDATE'
+             ELSE 'SOURCE_REQUIRES_REVIEW'
+           END AS source_quality
+      FROM catalog_items
+)
+SELECT item_type, id, city, country, name, source_name, source_url,
+       source_type, source_scope, source_quality, data_status, verification_notes
+  FROM classified
+ ORDER BY country, city, item_type, name;
+
+-- Summary counts use the same classification as the detail query and API.
+WITH catalog_items AS (
+    SELECT source_name, source_url, source_type, source_scope, data_status
+      FROM attractions WHERE active = TRUE
+    UNION ALL
+    SELECT source_name, source_url, source_type, source_scope, data_status
+      FROM activities WHERE active = TRUE
+),
+classified AS (
+    SELECT data_status,
+           CASE
+             WHEN NULLIF(BTRIM(source_name), '') IS NULL
+               OR NULLIF(BTRIM(source_url), '') IS NULL
+               OR source_url !~* '^https?://[^[:space:]]+$'
+               THEN 'NO_USABLE_SOURCE'
+             WHEN source_scope = 'DESTINATION_GENERAL'
+               THEN 'DESTINATION_CONTEXT_ONLY'
+             WHEN source_type = 'SCIENTIFIC'
+               THEN 'SCIENTIFIC_OR_GEOGRAPHIC_REFERENCE'
+             WHEN source_type IN ('ENCYCLOPEDIC', 'GENERIC')
+               THEN 'SECONDARY_REFERENCE_ONLY'
+             WHEN source_type = 'OFFICIAL'
+              AND source_scope = 'ITEM_SPECIFIC'
+              AND source_url ~* '/(attractions|visitor-information|useful-information|visitor-tips|patrimoine-materiel-national|standards-catalogue)/?([?#].*)?
+               THEN 'SOURCE_REQUIRES_REVIEW'
+             WHEN source_type = 'OFFICIAL' AND source_scope = 'ITEM_SPECIFIC'
+               THEN 'ITEM_SPECIFIC_PRIMARY_CANDIDATE'
+             ELSE 'SOURCE_REQUIRES_REVIEW'
+           END AS source_quality
+      FROM catalog_items
+)
+SELECT source_quality, data_status, COUNT(*) AS item_count
+  FROM classified
+ GROUP BY source_quality, data_status
+ ORDER BY source_quality, data_status;
+
                THEN 'SOURCE_REQUIRES_REVIEW'
              WHEN source_type = 'OFFICIAL' AND source_scope = 'ITEM_SPECIFIC'
                THEN 'ITEM_SPECIFIC_PRIMARY_CANDIDATE'
