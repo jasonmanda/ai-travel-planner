@@ -2,6 +2,7 @@ package com.aitravelplanner.catalog;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -102,15 +103,51 @@ class CatalogVerificationControllerTest {
 
     @Test
     void rejectsPriceVerificationWhenCurrentPriceOrCurrencyIsMissing() {
-        when(jdbc.queryForObject(anyString(), eq(Integer.class), eq(1L))).thenReturn(1);
-        Map<String, Object> currentPrice = new HashMap<>();
-        currentPrice.put("price", new BigDecimal("25.00"));
-        currentPrice.put("currency", null);
-        when(jdbc.queryForMap(anyString(), eq(1L))).thenReturn(currentPrice);
+        Map<String, Object> catalogItem = new HashMap<>();
+        catalogItem.put("estimated_visit_cost", new BigDecimal("25.00"));
+        catalogItem.put("cost_currency", null);
+        when(jdbc.queryForMap(anyString(), eq(1L))).thenReturn(catalogItem);
 
         CatalogVerificationRequest request = request(List.of(
                 "estimated_visit_cost", "cost_currency"
         ));
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> controller.verifyAttraction(1L, request, admin)
+        );
+
+        assertEquals(400, exception.getStatusCode().value());
+    }
+
+
+    @Test
+    void rejectsEssentialFieldVerificationWhenCurrentValueIsBlank() {
+        Map<String, Object> catalogItem = new HashMap<>();
+        catalogItem.put("description", "   ");
+        when(jdbc.queryForMap(anyString(), eq(1L))).thenReturn(catalogItem);
+
+        CatalogVerificationRequest request = request(List.of("description"));
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> controller.verifyAttraction(1L, request, admin)
+        );
+
+        assertEquals(400, exception.getStatusCode().value());
+        verify(jdbc).queryForMap(
+                org.mockito.ArgumentMatchers.contains("FOR UPDATE"),
+                eq(1L)
+        );
+    }
+
+    @Test
+    void rejectsEssentialFieldVerificationWhenCurrentValueIsNull() {
+        Map<String, Object> catalogItem = new HashMap<>();
+        catalogItem.put("latitude", null);
+        when(jdbc.queryForMap(anyString(), eq(1L))).thenReturn(catalogItem);
+
+        CatalogVerificationRequest request = request(List.of("latitude"));
 
         ResponseStatusException exception = assertThrows(
                 ResponseStatusException.class,
@@ -188,14 +225,10 @@ class CatalogVerificationControllerTest {
             );
 
             // 404 signifie que l'URL a passé la validation
-            // et que le contrôleur a poursuivi jusqu'à la recherche en base.
+            // et que le contrôleur a poursuivi jusqu'au verrouillage de la ligne.
             assertEquals(404, exception.getStatusCode().value());
         }
 
-        verify(jdbc, times(2)).queryForObject(
-                anyString(),
-                eq(Integer.class),
-                eq(1L)
-        );
+        verify(jdbc, times(2)).queryForMap(anyString(), eq(1L));
     }
 }
