@@ -112,17 +112,15 @@ event_coverage AS (
               AND EXISTS (
                   SELECT 1
                   FROM unnest(COALESCE(e.verified_fields, ARRAY[]::TEXT[])) AS f(field_name)
-                  WHERE NOT (
-                      COALESCE(e.verified_values, '{}'::JSONB) ? f.field_name
-                  )
+                  WHERE NOT (COALESCE(e.verified_values, '{}'::JSONB) ? f.field_name)
+                     OR COALESCE(e.verified_values -> f.field_name, 'null'::JSONB) = 'null'::JSONB
               )
         ) AS events_with_declared_fields_missing_values,
         SUM((
             SELECT COUNT(*)
             FROM unnest(COALESCE(e.verified_fields, ARRAY[]::TEXT[])) AS f(field_name)
-            WHERE NOT (
-                COALESCE(e.verified_values, '{}'::JSONB) ? f.field_name
-            )
+            WHERE NOT (COALESCE(e.verified_values, '{}'::JSONB) ? f.field_name)
+               OR COALESCE(e.verified_values -> f.field_name, 'null'::JSONB) = 'null'::JSONB
         )) AS declared_field_entries_missing_values
     FROM verification_events e
     GROUP BY e.item_type, e.item_id
@@ -254,9 +252,8 @@ field_checks AS (
         ARRAY(
             SELECT f.field_name
             FROM unnest(COALESCE(le.verified_fields, ARRAY[]::TEXT[])) AS f(field_name)
-            WHERE NOT (
-                COALESCE(le.verified_values, '{}'::JSONB) ? f.field_name
-            )
+            WHERE NOT (COALESCE(le.verified_values, '{}'::JSONB) ? f.field_name)
+               OR COALESCE(le.verified_values -> f.field_name, 'null'::JSONB) = 'null'::JSONB
             ORDER BY f.field_name
         ) AS latest_event_fields_missing_values
     FROM catalog_items i
@@ -284,28 +281,28 @@ derived_status AS (
         CASE
             WHEN latest_rejection_id IS NOT NULL
              AND (
-                 (name_verified::INTEGER
-                  + description_verified::INTEGER
-                  + category_verified::INTEGER
-                  + latitude_verified::INTEGER
-                  + longitude_verified::INTEGER
-                  + duration_verified::INTEGER) < 6
+                 (CASE WHEN name_verified THEN 1 ELSE 0 END
+                  + CASE WHEN description_verified THEN 1 ELSE 0 END
+                  + CASE WHEN category_verified THEN 1 ELSE 0 END
+                  + CASE WHEN latitude_verified THEN 1 ELSE 0 END
+                  + CASE WHEN longitude_verified THEN 1 ELSE 0 END
+                  + CASE WHEN duration_verified THEN 1 ELSE 0 END) < 6
              ) THEN 'REJECTED'
             WHEN (
-                 name_verified::INTEGER
-                 + description_verified::INTEGER
-                 + category_verified::INTEGER
-                 + latitude_verified::INTEGER
-                 + longitude_verified::INTEGER
-                 + duration_verified::INTEGER
+                 CASE WHEN name_verified THEN 1 ELSE 0 END
+                 + CASE WHEN description_verified THEN 1 ELSE 0 END
+                 + CASE WHEN category_verified THEN 1 ELSE 0 END
+                 + CASE WHEN latitude_verified THEN 1 ELSE 0 END
+                 + CASE WHEN longitude_verified THEN 1 ELSE 0 END
+                 + CASE WHEN duration_verified THEN 1 ELSE 0 END
             ) = 6 THEN 'VERIFIED'
             WHEN (
-                 name_verified::INTEGER
-                 + description_verified::INTEGER
-                 + category_verified::INTEGER
-                 + latitude_verified::INTEGER
-                 + longitude_verified::INTEGER
-                 + duration_verified::INTEGER
+                 CASE WHEN name_verified THEN 1 ELSE 0 END
+                 + CASE WHEN description_verified THEN 1 ELSE 0 END
+                 + CASE WHEN category_verified THEN 1 ELSE 0 END
+                 + CASE WHEN latitude_verified THEN 1 ELSE 0 END
+                 + CASE WHEN longitude_verified THEN 1 ELSE 0 END
+                 + CASE WHEN duration_verified THEN 1 ELSE 0 END
             ) > 0 THEN 'PARTIALLY_VERIFIED'
             ELSE 'UNVERIFIED'
         END AS derived_catalog_status
@@ -521,17 +518,17 @@ assessed AS (
         f.*,
         CASE
             WHEN latest_rejection_id IS NOT NULL
-             AND (name_verified::INTEGER + description_verified::INTEGER
-                  + category_verified::INTEGER + latitude_verified::INTEGER
-                  + longitude_verified::INTEGER + duration_verified::INTEGER) < 6
+             AND (CASE WHEN name_verified THEN 1 ELSE 0 END + CASE WHEN description_verified THEN 1 ELSE 0 END
+                  + CASE WHEN category_verified THEN 1 ELSE 0 END + CASE WHEN latitude_verified THEN 1 ELSE 0 END
+                  + CASE WHEN longitude_verified THEN 1 ELSE 0 END + CASE WHEN duration_verified THEN 1 ELSE 0 END) < 6
                 THEN 'REJECTED'
-            WHEN (name_verified::INTEGER + description_verified::INTEGER
-                  + category_verified::INTEGER + latitude_verified::INTEGER
-                  + longitude_verified::INTEGER + duration_verified::INTEGER) = 6
+            WHEN (CASE WHEN name_verified THEN 1 ELSE 0 END + CASE WHEN description_verified THEN 1 ELSE 0 END
+                  + CASE WHEN category_verified THEN 1 ELSE 0 END + CASE WHEN latitude_verified THEN 1 ELSE 0 END
+                  + CASE WHEN longitude_verified THEN 1 ELSE 0 END + CASE WHEN duration_verified THEN 1 ELSE 0 END) = 6
                 THEN 'VERIFIED'
-            WHEN (name_verified::INTEGER + description_verified::INTEGER
-                  + category_verified::INTEGER + latitude_verified::INTEGER
-                  + longitude_verified::INTEGER + duration_verified::INTEGER) > 0
+            WHEN (CASE WHEN name_verified THEN 1 ELSE 0 END + CASE WHEN description_verified THEN 1 ELSE 0 END
+                  + CASE WHEN category_verified THEN 1 ELSE 0 END + CASE WHEN latitude_verified THEN 1 ELSE 0 END
+                  + CASE WHEN longitude_verified THEN 1 ELSE 0 END + CASE WHEN duration_verified THEN 1 ELSE 0 END) > 0
                 THEN 'PARTIALLY_VERIFIED'
             ELSE 'UNVERIFIED'
         END AS derived_catalog_status
@@ -554,9 +551,6 @@ SELECT
     COUNT(*) FILTER (
         WHERE event_count > 0 AND data_status IS DISTINCT FROM derived_catalog_status
     ) AS catalog_status_recalculation_mismatch_count,
-    COUNT(*) FILTER (
-        WHERE event_count > 0 AND derived_catalog_status IS DISTINCT FROM data_status
-    ) AS status_mismatch_count,
     COALESCE(SUM(events_with_declared_fields_missing_values), 0)
         AS events_with_declared_fields_missing_values,
     COALESCE(SUM(declared_field_entries_missing_values), 0)
