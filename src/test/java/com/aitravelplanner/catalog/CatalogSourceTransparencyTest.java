@@ -202,6 +202,21 @@ class CatalogSourceTransparencyTest {
         assertFalse((Boolean) transparency.get("sourceSupportsRecommendation"));
     }
 
+    @Test
+    void operatorPrimaryEvidenceRemainsUnverifiedAndDoesNotSupportRecommendations() {
+        Map<String, Object> item = item("UNVERIFIED");
+        item.put("sourceType", "OPERATOR_PRIMARY");
+        item.put("sourceUrl", "https://seastarfish.co.tz/spice-tour");
+
+        Map<String, Object> transparency = CatalogSourceTransparency.describe(item);
+
+        assertEquals("OPERATOR_PRIMARY_CANDIDATE", transparency.get("sourceQuality"));
+        assertEquals("UNVERIFIED", transparency.get("verificationStatus"));
+        assertFalse((Boolean) transparency.get("verified"));
+        assertFalse((Boolean) transparency.get("sourceSupportsRecommendation"));
+    }
+
+
     private static Map<String, Object> item(String status) {
         Map<String, Object> item = new LinkedHashMap<>();
         item.put("sourceName", "Portail touristique");
