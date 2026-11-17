@@ -104,7 +104,7 @@ public class CatalogVerificationController {
                     "SELECT * FROM " + itemTable + " WHERE id = ? FOR UPDATE",
                     itemId
             );
-        } catch (org.springframework.dao.EmptyResultDataAccessException exception) {
+        } catch (EmptyResultDataAccessException exception) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Élément du catalogue introuvable");
         }
 
