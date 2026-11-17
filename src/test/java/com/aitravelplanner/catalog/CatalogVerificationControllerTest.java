@@ -57,6 +57,38 @@ class CatalogVerificationControllerTest {
     }
 
     @Test
+    void rejectsEmptyVerifiedFieldsBeforeDatabaseAccessForVerifiedAndRejectedEvents() {
+        for (CatalogVerificationRequest.VerificationStatus status : List.of(
+                CatalogVerificationRequest.VerificationStatus.VERIFIED,
+                CatalogVerificationRequest.VerificationStatus.REJECTED
+        )) {
+            CatalogVerificationRequest request = request(status, List.of());
+
+            ResponseStatusException exception = assertThrows(
+                    ResponseStatusException.class,
+                    () -> controller.verifyAttraction(1L, request, admin)
+            );
+
+            assertEquals(400, exception.getStatusCode().value());
+        }
+
+        verifyNoInteractions(jdbc);
+    }
+
+    @Test
+    void rejectsBlankVerifiedFieldBeforeDatabaseAccess() {
+        CatalogVerificationRequest request = request(List.of("   "));
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> controller.verifyAttraction(1L, request, admin)
+        );
+
+        assertEquals(400, exception.getStatusCode().value());
+        verifyNoInteractions(jdbc);
+    }
+
+    @Test
     void rejectsInvalidSourceUrlBeforeDatabaseAccess() {
         var request = new CatalogVerificationRequest(
                 CatalogVerificationRequest.VerificationStatus.VERIFIED,
@@ -158,8 +190,14 @@ class CatalogVerificationControllerTest {
     }
 
     private CatalogVerificationRequest request(List<String> fields) {
+        return request(CatalogVerificationRequest.VerificationStatus.VERIFIED, fields);
+    }
+
+    private CatalogVerificationRequest request(
+            CatalogVerificationRequest.VerificationStatus status,
+            List<String> fields) {
         return new CatalogVerificationRequest(
-                CatalogVerificationRequest.VerificationStatus.VERIFIED,
+                status,
                 fields,
                 "Office du tourisme",
                 "https://example.org/source",
