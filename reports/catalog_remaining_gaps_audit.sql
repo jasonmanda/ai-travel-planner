@@ -39,8 +39,8 @@ catalog_items AS (
            a.latitude, a.longitude, a.estimated_duration_minutes,
            a.source_name, a.source_url, a.source_type, a.source_scope
       FROM targets t
-      JOIN countries co ON co.iso_code = t.iso_code
-      JOIN cities c ON c.country_id = co.id AND c.name = t.city
+      LEFT JOIN countries co ON co.iso_code = t.iso_code
+      LEFT JOIN cities c ON c.country_id = co.id AND c.name = t.city
       LEFT JOIN activities a ON a.city_id = c.id AND a.id = t.item_id
      WHERE t.item_type = 'ACTIVITY'
 
@@ -52,8 +52,8 @@ catalog_items AS (
            a.latitude, a.longitude, a.estimated_duration_minutes,
            a.source_name, a.source_url, a.source_type, a.source_scope
       FROM targets t
-      JOIN countries co ON co.iso_code = t.iso_code
-      JOIN cities c ON c.country_id = co.id AND c.name = t.city
+      LEFT JOIN countries co ON co.iso_code = t.iso_code
+      LEFT JOIN cities c ON c.country_id = co.id AND c.name = t.city
       LEFT JOIN attractions a ON a.city_id = c.id AND a.id = t.item_id
      WHERE t.item_type = 'ATTRACTION'
 )
@@ -95,16 +95,16 @@ items AS (
     SELECT t.item_type, a.id IS NOT NULL AS record_found, a.data_status,
            a.latitude, a.longitude, a.estimated_duration_minutes
       FROM targets t
-      JOIN countries co ON co.iso_code = t.iso_code
-      JOIN cities c ON c.country_id = co.id AND c.name = t.city
+      LEFT JOIN countries co ON co.iso_code = t.iso_code
+      LEFT JOIN cities c ON c.country_id = co.id AND c.name = t.city
       LEFT JOIN activities a ON a.city_id = c.id AND a.id = t.item_id
      WHERE t.item_type = 'ACTIVITY'
     UNION ALL
     SELECT t.item_type, a.id IS NOT NULL, a.data_status,
            a.latitude, a.longitude, a.estimated_duration_minutes
       FROM targets t
-      JOIN countries co ON co.iso_code = t.iso_code
-      JOIN cities c ON c.country_id = co.id AND c.name = t.city
+      LEFT JOIN countries co ON co.iso_code = t.iso_code
+      LEFT JOIN cities c ON c.country_id = co.id AND c.name = t.city
       LEFT JOIN attractions a ON a.city_id = c.id AND a.id = t.item_id
      WHERE t.item_type = 'ATTRACTION'
 )
