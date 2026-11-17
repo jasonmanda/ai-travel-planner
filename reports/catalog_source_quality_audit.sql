@@ -1,5 +1,6 @@
--- Read-only audit of source suitability for attractions and activities.
+-- Read-only audit of source suitability for active attractions and activities.
 -- Run manually in pgAdmin. This report does not update catalog data or verification status.
+-- Classification mirrors CatalogSourceTransparency, including its structural URL guard.
 
 WITH catalog_items AS (
     SELECT 'ATTRACTION'::TEXT AS item_type, a.id, c.name AS city, co.name AS country,
@@ -31,6 +32,10 @@ classified AS (
                THEN 'SCIENTIFIC_OR_GEOGRAPHIC_REFERENCE'
              WHEN source_type IN ('ENCYCLOPEDIC', 'GENERIC')
                THEN 'SECONDARY_REFERENCE_ONLY'
+             WHEN source_type = 'OFFICIAL'
+              AND source_scope = 'ITEM_SPECIFIC'
+              AND source_url ~* '(^|/)(attractions|visitor-information|useful-information|visitor-tips|patrimoine-materiel-national|standards-catalogue)(/|[?#]|$)'
+               THEN 'SOURCE_REQUIRES_REVIEW'
              WHEN source_type = 'OFFICIAL' AND source_scope = 'ITEM_SPECIFIC'
                THEN 'ITEM_SPECIFIC_PRIMARY_CANDIDATE'
              ELSE 'SOURCE_REQUIRES_REVIEW'
@@ -42,7 +47,7 @@ SELECT item_type, id, city, country, name, source_name, source_url,
   FROM classified
  ORDER BY country, city, item_type, name;
 
--- Summary counts by source quality and verification status.
+-- Summary counts use the same classification as the detail query and API.
 WITH catalog_items AS (
     SELECT source_name, source_url, source_type, source_scope, data_status
       FROM attractions WHERE active = TRUE
@@ -63,6 +68,10 @@ classified AS (
                THEN 'SCIENTIFIC_OR_GEOGRAPHIC_REFERENCE'
              WHEN source_type IN ('ENCYCLOPEDIC', 'GENERIC')
                THEN 'SECONDARY_REFERENCE_ONLY'
+             WHEN source_type = 'OFFICIAL'
+              AND source_scope = 'ITEM_SPECIFIC'
+              AND source_url ~* '(^|/)(attractions|visitor-information|useful-information|visitor-tips|patrimoine-materiel-national|standards-catalogue)(/|[?#]|$)'
+               THEN 'SOURCE_REQUIRES_REVIEW'
              WHEN source_type = 'OFFICIAL' AND source_scope = 'ITEM_SPECIFIC'
                THEN 'ITEM_SPECIFIC_PRIMARY_CANDIDATE'
              ELSE 'SOURCE_REQUIRES_REVIEW'
