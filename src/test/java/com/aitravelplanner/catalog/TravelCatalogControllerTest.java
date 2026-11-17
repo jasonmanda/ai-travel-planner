@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -25,6 +26,11 @@ class TravelCatalogControllerTest {
                         "latitude", -6.26755,
                         "longitude", 39.41111,
                         "geographicArea", "JOZANI",
+                        "sourceName", "AntWeb",
+                        "sourceUrl", "https://www.antweb.org/locality.do?code=CEPF-TZ-10",
+                        "sourceType", "SCIENTIFIC",
+                        "sourceScope", "ITEM_SPECIFIC",
+                        "dataStatus", "UNVERIFIED",
                         "duplicateOfType", "ATTRACTION",
                         "duplicateOfId", 12L,
                         "deduplicationRelation", "SAME_EXPERIENCE"
@@ -43,5 +49,10 @@ class TravelCatalogControllerTest {
         Map<String, Object> quality = (Map<String, Object>) activities.getFirst().get("catalogQuality");
         assertEquals("DATA_COMPLETENESS_NOT_EXPERIENCE_QUALITY", quality.get("metric"));
         assertEquals(20, quality.get("score"));
+        @SuppressWarnings("unchecked")
+        Map<String, Object> transparency = (Map<String, Object>) activities.getFirst().get("sourceTransparency");
+        assertEquals("SCIENTIFIC_OR_GEOGRAPHIC_REFERENCE", transparency.get("sourceQuality"));
+        assertEquals(false, transparency.get("sourceSupportsRecommendation"));
+        assertTrue(String.valueOf(transparency.get("sourceQualityReason")).contains("offre touristique"));
     }
 }
