@@ -60,9 +60,9 @@ L'unique coordonnée qui restera NULL dans ce lot est celle de l'activité gén�
 - `reports/catalog_remaining_gaps_audit.sql` : audit SELECT-only du périmètre des 27 fiches et résumé des écarts.
 - `reports/catalog_remaining_gaps_manual.sql` : transaction manuelle contrôlée ; 10 corrections de coordonnées et 4 estimations de durée ; ce n'est pas une migration Flyway.
 
-Exécuter d'abord l'audit pour comparer les valeurs de la base avec le périmètre attendu, puis exécuter le script de correction une seule fois. Le script de correction est idempotent par garde sur les champs NULL : une seconde exécution échoue explicitement au premier enregistrement déjà corrigé au lieu de réécrire silencieusement les données.
+Exécuter d'abord l'audit pour comparer les valeurs de la base avec le périmètre attendu, puis exécuter le script de correction une seule fois. Le script de correction est protégé par des gardes sur les champs NULL : une seconde exécution échoue explicitement au premier enregistrement déjà corrigé au lieu de réécrire silencieusement les données.
 
-Après exécution, vérifier les 13 lignes retournées par le SELECT final et relancer l'audit. Les fiches restent `UNVERIFIED` ; aucune n'est éligible à la recommandation tant que le contrôle métier complet n'a pas été réalisé.
+Après exécution, vérifier les 11 lignes retournées par le SELECT final et relancer l'audit. Les fiches restent `UNVERIFIED` ; aucune n'est éligible à la recommandation tant que le contrôle métier complet n'a pas été réalisé.
 
 ## Garanties
 
