@@ -16,10 +16,10 @@ Cette PR propose quatre compléments de coordonnées pour trois lieux distincts 
 
 | Fiche | Latitude | Longitude | Interprétation et source |
 |---|---:|---:|---|
-| ACTIVITY MA id=3 — Visite du Jardin Majorelle | 31.64137 | -8.00292 | Point représentatif du jardin, géométrie OpenStreetMap way 41922120. [OpenStreetMap](https://www.openstreetmap.org/way/41922120) ; coordonnées également publiées par Mapcarta à partir d'OSM. |
+| ACTIVITY MA id=3 — activité liée au Jardin Majorelle (identification par ID, ville et pays) | 31.64137 | -8.00292 | Point représentatif du jardin, issu de la géométrie OpenStreetMap way 41922120. [OpenStreetMap](https://www.openstreetmap.org/way/41922120) ; coordonnées affichées par [Mapcarta](https://mapcarta.com/fr/27412860) à partir d'OSM. |
 | ATTRACTION MA id=3 — Jardin Majorelle | 31.64137 | -8.00292 | Même lieu et même point représentatif ; même référence géographique. |
 | ATTRACTION TZ id=13 — Prison Island (Changuu) | -6.120402 | 39.168599 | Coordonnées de Changuu (Prison) figurant dans un document budgétaire de la Chambre des représentants de Zanzibar. [Document gouvernemental](https://www.zanzibarassembly.go.tz/public/storage/documents/Budgets/all/1735288194.pdf) |
-| ACTIVITY ZA id=5 — Randonnée à Lion's Head | -33.9696 | 18.3969 | Coordonnée du mont Lion's Head dans la fiche South African History Online. C'est un point de référence du relief, pas le départ du sentier. [South African History Online](https://sahistory.org.za/place/lions-head-mt) |
+| ACTIVITY ZA id=5 — activité Lion's Head (identification par ID, ville et pays) | -33.9696 | 18.3969 | Coordonnée du mont Lion's Head dans la fiche South African History Online. C'est un point de référence du relief, pas le départ du sentier. [South African History Online](https://sahistory.org.za/place/lions-head-mt) |
 
 Les coordonnées ne sont renseignées que si la paire latitude/longitude est entièrement NULL et si l'identité du pays, de la ville, de l'ID et du nom correspond exactement. Le script s'interrompt et annule la transaction si une des quatre mises à jour ne touche pas exactement une ligne.
 
