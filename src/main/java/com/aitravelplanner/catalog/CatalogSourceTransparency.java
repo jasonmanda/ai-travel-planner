@@ -30,7 +30,7 @@ public final class CatalogSourceTransparency {
         result.put("sourceQuality", sourceQuality);
         result.put("sourceQualityLabel", sourceQualityLabel(sourceQuality));
         result.put("sourceQualityReason", sourceQualityReason);
-        result.put("sourceSupportsRecommendation", "NEVER".equals(sourceQuality));
+        result.put("sourceSupportsRecommendation", false);
         result.put("verificationStatus", dataStatus);
         result.put("verificationLevel", verificationLevel);
         result.put("documented", documented);
@@ -69,7 +69,7 @@ public final class CatalogSourceTransparency {
             case "DESTINATION_CONTEXT_ONLY" -> "Contexte général de destination";
             case "SCIENTIFIC_OR_GEOGRAPHIC_REFERENCE" -> "Référence scientifique ou géographique";
             case "SECONDARY_REFERENCE_ONLY" -> "Référence secondaire uniquement";
-            case "ITEM_SPECIFIC_PRIMARY_CANDIDATE" -> "Source institutionnelle spécifique à l’élément";
+            case "ITEM_SPECIFIC_PRIMARY_CANDIDATE" -> "Source institutionnelle spécifique à examiner";
             default -> "Qualité de source à examiner";
         };
     }
