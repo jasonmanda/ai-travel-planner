@@ -104,6 +104,10 @@ classified AS (
             THEN 'SECONDARY_REFERENCE_ONLY'
           WHEN source_type = 'OFFICIAL'
            AND source_scope = 'ITEM_SPECIFIC'
+           AND source_url ~* '/(index\\.(php|html?)|default\\.(aspx?|html?)|home)/?([?#].*)?$'
+            THEN 'SOURCE_REQUIRES_REVIEW'
+          WHEN source_type = 'OFFICIAL'
+           AND source_scope = 'ITEM_SPECIFIC'
            AND source_url ~* '/(attractions|visitor-information|useful-information|visitor-tips|patrimoine-materiel-national|standards-catalogue)/?([?#].*)?$'
             THEN 'SOURCE_REQUIRES_REVIEW'
           WHEN source_type = 'OFFICIAL' AND source_scope = 'ITEM_SPECIFIC'
@@ -195,7 +199,80 @@ classified AS (
           WHEN source_type = 'SCIENTIFIC' THEN 'SCIENTIFIC_OR_GEOGRAPHIC_REFERENCE'
           WHEN source_type IN ('ENCYCLOPEDIC', 'GENERIC') THEN 'SECONDARY_REFERENCE_ONLY'
           WHEN source_type = 'OFFICIAL' AND source_scope = 'ITEM_SPECIFIC'
-           AND source_url ~* '/(attractions|visitor-information|useful-information|visitor-tips|patrimoine-materiel-national|standards-catalogue)/?([?#].*)?$'
+           AND source_url ~* '/(index\\.(php|html?)|default\\.(aspx?|html?)|home)/?([?#].*)?
+          WHEN source_type = 'OFFICIAL' AND source_scope = 'ITEM_SPECIFIC'
+           AND (
+                lower(source_url) LIKE '%whc.unesco.org/en/list/173%'
+             OR lower(source_url) LIKE '%whc.unesco.org/document/218167%'
+             OR lower(source_url) LIKE '%bot.go.tz/%tanzania%tourism%sector%survey%'
+             OR lower(source_url) LIKE '%sanparks.org/parks/table-mountain'
+             OR lower(source_url) LIKE '%tanzaniatourism.go.tz/%chan-2024-participant-guidebook%'
+             OR lower(source_url) LIKE '%nishati.go.tz/%eapce25%'
+           )
+            THEN 'SOURCE_REQUIRES_REVIEW'
+          WHEN source_type = 'OFFICIAL' AND source_scope = 'ITEM_SPECIFIC'
+            THEN 'ITEM_SPECIFIC_PRIMARY_CANDIDATE'
+          ELSE 'SOURCE_REQUIRES_REVIEW'
+        END AS source_quality,
+        (latitude IS NOT NULL AND longitude IS NOT NULL
+         AND latitude BETWEEN -90 AND 90 AND longitude BETWEEN -180 AND 180) AS coordinates_valid
+    FROM catalog_items
+)
+SELECT
+    COUNT(*) AS active_candidate_count,
+    COUNT(*) FILTER (
+        WHERE data_status = 'VERIFIED'
+          AND source_quality = 'ITEM_SPECIFIC_PRIMARY_CANDIDATE'
+          AND coordinates_valid
+          AND estimated_duration_minutes > 0
+          AND NULLIF(BTRIM(name), '') IS NOT NULL
+          AND NULLIF(BTRIM(category), '') IS NOT NULL
+    ) AS recommendation_eligible_count,
+    COUNT(*) FILTER (WHERE data_status <> 'VERIFIED') AS not_fully_verified_count,
+    COUNT(*) FILTER (WHERE source_quality <> 'ITEM_SPECIFIC_PRIMARY_CANDIDATE') AS source_gate_failed_count,
+    COUNT(*) FILTER (WHERE NOT coordinates_valid) AS invalid_or_missing_coordinates_count,
+    COUNT(*) FILTER (WHERE estimated_duration_minutes IS NULL OR estimated_duration_minutes <= 0)
+        AS missing_or_invalid_duration_count
+FROM classified;
+
+            THEN 'SOURCE_REQUIRES_REVIEW'
+          WHEN source_type = 'OFFICIAL' AND source_scope = 'ITEM_SPECIFIC'
+           AND source_url ~* '/(attractions|visitor-information|useful-information|visitor-tips|patrimoine-materiel-national|standards-catalogue)/?([?#].*)?
+          WHEN source_type = 'OFFICIAL' AND source_scope = 'ITEM_SPECIFIC'
+           AND (
+                lower(source_url) LIKE '%whc.unesco.org/en/list/173%'
+             OR lower(source_url) LIKE '%whc.unesco.org/document/218167%'
+             OR lower(source_url) LIKE '%bot.go.tz/%tanzania%tourism%sector%survey%'
+             OR lower(source_url) LIKE '%sanparks.org/parks/table-mountain'
+             OR lower(source_url) LIKE '%tanzaniatourism.go.tz/%chan-2024-participant-guidebook%'
+             OR lower(source_url) LIKE '%nishati.go.tz/%eapce25%'
+           )
+            THEN 'SOURCE_REQUIRES_REVIEW'
+          WHEN source_type = 'OFFICIAL' AND source_scope = 'ITEM_SPECIFIC'
+            THEN 'ITEM_SPECIFIC_PRIMARY_CANDIDATE'
+          ELSE 'SOURCE_REQUIRES_REVIEW'
+        END AS source_quality,
+        (latitude IS NOT NULL AND longitude IS NOT NULL
+         AND latitude BETWEEN -90 AND 90 AND longitude BETWEEN -180 AND 180) AS coordinates_valid
+    FROM catalog_items
+)
+SELECT
+    COUNT(*) AS active_candidate_count,
+    COUNT(*) FILTER (
+        WHERE data_status = 'VERIFIED'
+          AND source_quality = 'ITEM_SPECIFIC_PRIMARY_CANDIDATE'
+          AND coordinates_valid
+          AND estimated_duration_minutes > 0
+          AND NULLIF(BTRIM(name), '') IS NOT NULL
+          AND NULLIF(BTRIM(category), '') IS NOT NULL
+    ) AS recommendation_eligible_count,
+    COUNT(*) FILTER (WHERE data_status <> 'VERIFIED') AS not_fully_verified_count,
+    COUNT(*) FILTER (WHERE source_quality <> 'ITEM_SPECIFIC_PRIMARY_CANDIDATE') AS source_gate_failed_count,
+    COUNT(*) FILTER (WHERE NOT coordinates_valid) AS invalid_or_missing_coordinates_count,
+    COUNT(*) FILTER (WHERE estimated_duration_minutes IS NULL OR estimated_duration_minutes <= 0)
+        AS missing_or_invalid_duration_count
+FROM classified;
+
             THEN 'SOURCE_REQUIRES_REVIEW'
           WHEN source_type = 'OFFICIAL' AND source_scope = 'ITEM_SPECIFIC'
            AND (
