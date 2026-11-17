@@ -78,14 +78,14 @@ public class TravelCatalogController {
 
     private List<Map<String, Object>> attractions(long cityId) {
         return withQuality(jdbc.queryForList("""
-                SELECT id, name, category, description, latitude, longitude,
-                       geographic_area AS "geographicArea",
-                       estimated_visit_cost AS "estimatedCost", cost_currency AS currency,
-                       estimated_duration_minutes AS "estimatedDurationMinutes",
-                       data_status AS "dataStatus", source_name AS "sourceName",
-                       source_url AS "sourceUrl", source_type AS "sourceType",
-                       source_scope AS "sourceScope", verification_notes AS "verificationNotes",
-                       last_verified_at AS "lastVerifiedAt",
+                SELECT a.id, a.name, a.category, a.description, a.latitude, a.longitude,
+                       a.geographic_area AS "geographicArea",
+                       a.estimated_visit_cost AS "estimatedCost", a.cost_currency AS currency,
+                       a.estimated_duration_minutes AS "estimatedDurationMinutes",
+                       a.data_status AS "dataStatus", a.source_name AS "sourceName",
+                       a.source_url AS "sourceUrl", a.source_type AS "sourceType",
+                       a.source_scope AS "sourceScope", a.verification_notes AS "verificationNotes",
+                       a.last_verified_at AS "lastVerifiedAt",
                        CASE
                            WHEN a.estimated_visit_cost IS NULL THEN 'NOT_AVAILABLE'
                            WHEN pv.verification_status = 'VERIFIED'
