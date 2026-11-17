@@ -80,6 +80,7 @@ class RecommendationServiceTest {
         assertEquals("INDICATIVE_NOT_USED_IN_SCORE", result.get(0).get("budgetStatus"));
         assertEquals(new BigDecimal("500"), result.get(0).get("estimatedTripBudget"));
         assertEquals("INDICATIVE", result.get(0).get("budgetEstimateStatus"));
+        assertEquals("XOF", result.get(0).get("currency"));
     }
 
     @Test
@@ -98,6 +99,9 @@ class RecommendationServiceTest {
         assertEquals(100, ((Map<?, ?>) result.get("scoreBreakdown")).get("budget"));
         assertEquals("WITHIN_BUDGET", result.get("budgetStatus"));
         assertEquals("Official source", result.get("budgetSourceName"));
+        assertEquals("https://example.org/prices", result.get("budgetSourceUrl"));
+        assertEquals("XOF", result.get("currency"));
+        assertEquals(java.time.Instant.parse("2026-01-01T00:00:00Z"), result.get("budgetVerifiedAt"));
     }
 
     @Test
@@ -114,6 +118,47 @@ class RecommendationServiceTest {
         assertNull(result.get("estimatedTripBudget"));
         assertEquals("ESTIMATE_NOT_AVAILABLE", result.get("budgetStatus"));
         assertEquals(70, ((Map<?, ?>) result.get("scoreBreakdown")).get("budget"));
+    }
+ 
+    @Test
+    void findReturnsPersistedBudgetSnapshotInsteadOfCurrentCityMetadata() {
+        UUID tripId = UUID.randomUUID();
+        TripRequest trip = mockTrip();
+        City city = mockCity("INDICATIVE", "90000");
+        when(city.getEstimatedDailyBudgetStatus()).thenReturn("VERIFIED");
+        when(city.getEstimatedDailyBudgetSourceName()).thenReturn("New source");
+        when(city.getEstimatedDailyBudgetSourceUrl()).thenReturn("https://new.example.org");
+        when(city.getEstimatedDailyBudgetVerifiedAt())
+                .thenReturn(java.time.Instant.parse("2026-11-17T00:00:00Z"));
+
+        Recommendation recommendation = mock(Recommendation.class);
+        when(recommendation.getId()).thenReturn(12L);
+        when(recommendation.getCity()).thenReturn(city);
+        when(recommendation.getScore()).thenReturn(80);
+        when(recommendation.getEstimatedTripBudget()).thenReturn(new BigDecimal("450000"));
+        when(recommendation.getBudgetStatus()).thenReturn("INDICATIVE_NOT_USED_IN_SCORE");
+        when(recommendation.getBudgetEstimateStatus()).thenReturn("INDICATIVE");
+        when(recommendation.getBudgetCurrency()).thenReturn("XOF");
+        when(recommendation.getBudgetSourceName()).thenReturn(null);
+        when(recommendation.getBudgetSourceUrl()).thenReturn(null);
+        when(recommendation.getBudgetVerifiedAt()).thenReturn(null);
+        when(recommendation.getBudgetEstimateNotes()).thenReturn("Old indicative scope");
+        when(recommendation.getExplanation()).thenReturn("Budget indicatif.");
+        when(recommendation.getGeneratedAt())
+                .thenReturn(java.time.Instant.parse("2026-11-16T00:00:00Z"));
+        when(trips.existsById(tripId)).thenReturn(true);
+        when(recommendations.findByTripIdOrderByScoreDesc(tripId))
+                .thenReturn(List.of(recommendation));
+
+        Map<String, Object> result = service.find(tripId).get(0);
+
+        assertEquals("INDICATIVE", result.get("budgetEstimateStatus"));
+        assertEquals("XOF", result.get("currency"));
+        assertNull(result.get("budgetSourceName"));
+        assertNull(result.get("budgetSourceUrl"));
+        assertNull(result.get("budgetVerifiedAt"));
+        assertEquals("Old indicative scope", result.get("budgetEstimateNotes"));
+        assertEquals(new BigDecimal("450000"), result.get("estimatedTripBudget"));
     }
 
     private TripRequest mockTrip() {
