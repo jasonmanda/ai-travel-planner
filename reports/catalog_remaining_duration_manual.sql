@@ -21,7 +21,9 @@ WITH targets(id, iso_code, city_name, item_name, duration_minutes, duration_note
         (9, 'TZ', 'Zanzibar', 'Excursion dans la forêt de Jozani', 150,
          'Planning duration estimate: 150 min, midpoint of published 2–3 h visitor guidance; transport to/from the park is excluded. https://tanzaniafrontier.com/zanzibar/attractions/'),
         (11, 'TZ', 'Zanzibar', 'Découverte du marché nocturne de Forodhani', 90,
-         'Planning duration estimate: 90 min, within a published 1–2 h visitor range; food queues and time spent dining vary. https://amzbooking.com/travel/zanzibar/things-to-do')
+         'Planning duration estimate: 90 min, within a published 1–2 h visitor range; food queues and time spent dining vary. https://amzbooking.com/travel/zanzibar/things-to-do'),
+        (6, 'ZA', 'Le Cap', 'Découverte du front de mer', 180,
+         'Planning duration estimate: 180 min for a general V&A Waterfront precinct visit; individual attractions have separate hours and durations. https://www.waterfront.co.za/attractions/plan-your-day')
 )
 UPDATE activities a
 SET estimated_duration_minutes = t.duration_minutes,
@@ -41,8 +43,7 @@ WHERE a.id = t.id
   AND a.estimated_duration_minutes IS NULL
 RETURNING co.iso_code, c.name AS city, a.id, a.name, a.estimated_duration_minutes, a.data_status;
 
--- Expected: 5 activity rows. (Marrakech 1, Zanzibar 4, Cape Town 1) = 6.
--- The actual target list above contains 5 rows; verify the RETURNING count before proceeding.
+-- Expected: 6 activity rows (Marrakech 1, Zanzibar 4, Cape Town 1).
 
 WITH targets(id, iso_code, city_name, item_name, duration_minutes, duration_note) AS (
     VALUES
@@ -98,9 +99,5 @@ WHERE a.id = t.id
 RETURNING co.iso_code, c.name AS city, a.id, a.name, a.estimated_duration_minutes, a.data_status;
 
 -- Expected: 16 attraction rows. Inspect both RETURNING result grids.
--- Note: The activity target list must be amended with Cape Town activity id=6
--- ("Découverte du front de mer", 180 min) before execution; it is intentionally
--- not included above until its note is reviewed alongside the official V&A source.
-
 -- Do not commit until the activity and attraction result counts and identities are correct.
--- Expected final counts after correcting the activity target list: 6 activities + 16 attractions.
+-- Expected final counts: 6 activities + 16 attractions.
