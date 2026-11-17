@@ -17,6 +17,15 @@ spring:
     properties:
       hibernate:
         format_sql: true
+  ai:
+    model:
+      chat: ${SPRING_AI_MODEL_CHAT:none}
+    openai:
+      api-key: ${OPENAI_API_KEY:}
+      chat:
+        options:
+          model: ${OPENAI_MODEL:gpt-5-mini}
+          temperature: 0.2
 
 management:
   endpoints:
@@ -25,5 +34,7 @@ management:
         include: health,info
 
 app:
+  ai:
+    enabled: ${APP_AI_ENABLED:false}
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
