@@ -24,6 +24,7 @@ DECLARE
     v_longitude_ok BOOLEAN;
     v_duration_ok BOOLEAN;
     v_verified_count INTEGER;
+    v_full_post_rejection BOOLEAN;
     v_new_status VARCHAR(30);
     v_last_verified_at TIMESTAMPTZ;
 BEGIN
@@ -110,7 +111,26 @@ BEGIN
         (CASE WHEN v_longitude_ok THEN 1 ELSE 0 END) +
         (CASE WHEN v_duration_ok THEN 1 ELSE 0 END);
 
-    IF v_latest_rejection_id IS NOT NULL AND v_verified_count < 6 THEN
+    v_full_post_rejection := v_latest_rejection_id IS NULL OR EXISTS (
+        SELECT 1
+          FROM attraction_verification_history h
+         WHERE h.attraction_id = p_attraction_id
+           AND h.id > v_latest_rejection_id
+           AND h.verification_status = 'VERIFIED'
+           AND h.verified_fields @> ARRAY[
+               'name', 'description', 'category', 'latitude',
+               'longitude', 'estimated_duration_minutes'
+           ]::TEXT[]
+           AND h.verified_values -> 'name' = to_jsonb(v_item.name)
+           AND h.verified_values -> 'description' = to_jsonb(v_item.description)
+           AND h.verified_values -> 'category' = to_jsonb(v_item.category)
+           AND h.verified_values -> 'latitude' = to_jsonb(v_item.latitude)
+           AND h.verified_values -> 'longitude' = to_jsonb(v_item.longitude)
+           AND h.verified_values -> 'estimated_duration_minutes'
+                = to_jsonb(v_item.estimated_duration_minutes)
+    );
+
+    IF v_latest_rejection_id IS NOT NULL AND NOT v_full_post_rejection THEN
         v_new_status := 'REJECTED';
     ELSIF v_verified_count = 6 THEN
         v_new_status := 'VERIFIED';
@@ -245,7 +265,26 @@ BEGIN
         (CASE WHEN v_longitude_ok THEN 1 ELSE 0 END) +
         (CASE WHEN v_duration_ok THEN 1 ELSE 0 END);
 
-    IF v_latest_rejection_id IS NOT NULL AND v_verified_count < 6 THEN
+    v_full_post_rejection := v_latest_rejection_id IS NULL OR EXISTS (
+        SELECT 1
+          FROM activity_verification_history h
+         WHERE h.activity_id = p_activity_id
+           AND h.id > v_latest_rejection_id
+           AND h.verification_status = 'VERIFIED'
+           AND h.verified_fields @> ARRAY[
+               'name', 'description', 'category', 'latitude',
+               'longitude', 'estimated_duration_minutes'
+           ]::TEXT[]
+           AND h.verified_values -> 'name' = to_jsonb(v_item.name)
+           AND h.verified_values -> 'description' = to_jsonb(v_item.description)
+           AND h.verified_values -> 'category' = to_jsonb(v_item.category)
+           AND h.verified_values -> 'latitude' = to_jsonb(v_item.latitude)
+           AND h.verified_values -> 'longitude' = to_jsonb(v_item.longitude)
+           AND h.verified_values -> 'estimated_duration_minutes'
+                = to_jsonb(v_item.estimated_duration_minutes)
+    );
+
+    IF v_latest_rejection_id IS NOT NULL AND NOT v_full_post_rejection THEN
         v_new_status := 'REJECTED';
     ELSIF v_verified_count = 6 THEN
         v_new_status := 'VERIFIED';
