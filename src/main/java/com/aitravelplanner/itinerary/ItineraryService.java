@@ -124,8 +124,20 @@ public class ItineraryService {
                 WHERE act.city_id = ? AND act.active = TRUE AND act.data_status <> 'REJECTED'
                 ORDER BY title
                 """, destinationId, destinationId);
-        List<Map<String, Object>> candidates =
+        List<Map<String, Object>> deduplicatedCandidates =
                 CatalogDeduplication.removeSemanticDuplicates(rawCandidates);
+        List<Map<String, Object>> candidates = new ArrayList<>();
+        Map<String, Integer> exclusionReasons = new LinkedHashMap<>();
+        for (Map<String, Object> candidate : deduplicatedCandidates) {
+            CatalogRecommendationEligibility.Evaluation evaluation =
+                    CatalogRecommendationEligibility.evaluate(candidate);
+            if (evaluation.eligible()) {
+                candidates.add(candidate);
+            } else {
+                evaluation.reasons().forEach(reason -> exclusionReasons.merge(reason, 1, Integer::sum));
+            }
+        }
+        int excludedCandidateCount = deduplicatedCandidates.size() - candidates.size();
         String rawInterests = (String) trip.get("interests");
         List<String> interests = rawInterests == null || rawInterests.isBlank()
                 ? List.of()
@@ -150,8 +162,16 @@ public class ItineraryService {
         ItineraryGeographicPlanner.PlanningResult planning =
                 ItineraryGeographicPlanner.planWithUnplanned(candidates, durationDays, MAX_ITEMS_PER_DAY);
         List<List<Map<String, Object>>> dailyAssignments = planning.days();
-        jdbc.update("UPDATE itineraries SET unplanned_item_count = ? WHERE id = ?",
-                planning.unplannedItems().size(), itineraryId);
+        jdbc.update("""
+                UPDATE itineraries
+                   SET unplanned_item_count = ?,
+                       catalog_candidate_count = ?,
+                       recommendation_eligible_count = ?,
+                       recommendation_excluded_count = ?
+                 WHERE id = ?
+                """,
+                planning.unplannedItems().size(), deduplicatedCandidates.size(),
+                candidates.size(), excludedCandidateCount, itineraryId);
         for (int day = 1; day <= durationDays; day++) {
             List<Map<String, Object>> dayItems = dailyAssignments.get(day - 1);
 
@@ -204,6 +224,9 @@ public class ItineraryService {
                 SELECT i.id, i.trip_id AS "tripId", i.city_id AS "destinationId",
                        i.title, i.status, i.generated_at AS "generatedAt",
                        i.unplanned_item_count AS "unplannedItemCount",
+                       i.catalog_candidate_count AS "catalogCandidateCount",
+                       i.recommendation_eligible_count AS "recommendationEligibleCount",
+                       i.recommendation_excluded_count AS "recommendationExcludedCount",
                        c.name AS city, co.name AS country, co.iso_code AS "countryCode"
                 FROM itineraries i
                 JOIN cities c ON c.id = i.city_id
@@ -250,6 +273,13 @@ public class ItineraryService {
         }
 
         itinerary.put("days", days);
+        Map<String, Object> recommendationEligibility = new LinkedHashMap<>();
+        recommendationEligibility.put("candidateCount", itinerary.get("catalogCandidateCount"));
+        recommendationEligibility.put("eligibleCount", itinerary.get("recommendationEligibleCount"));
+        recommendationEligibility.put("excludedCount", itinerary.get("recommendationExcludedCount"));
+        recommendationEligibility.put("policy",
+                "Seules les fiches VERIFIED avec source officielle spécifique candidate, coordonnées valides et durée renseignée sont planifiées. Les tarifs, horaires, accès et disponibilités sont contrôlés séparément et ne sont pas garantis.");
+        itinerary.put("recommendationEligibility", recommendationEligibility);
         int unplannedCount = ((Number) itinerary.get("unplannedItemCount")).intValue();
         itinerary.put("planningWarnings", unplannedCount == 0 ? List.of()
                 : List.of(unplannedCount + " suggestion(s) n'ont pas été planifiée(s) en raison des limites de capacité ou de regroupement géographique. Elles ne sont pas supprimées du catalogue."));
@@ -257,7 +287,7 @@ public class ItineraryService {
         itinerary.put("estimateDisclaimer",
                 "Les montants sont des estimations indicatives lorsqu'ils sont renseignés. Les éléments UNVERIFIED ne sont pas des informations confirmées. Vérifiez les tarifs, horaires, disponibilités et conditions auprès des sources officielles.");
         itinerary.put("planningPolicy",
-                "Les suggestions sont classées d'abord selon la correspondance entre les catégories du catalogue, les centres d’intérêt et le style de voyage. À pertinence égale, les informations les mieux documentées sont prioritaires. La qualité documentaire ne garantit ni l'exactitude ni la qualité réelle de l'expérience. Les éléments REJECTED sont exclus. La proximité géographique, les zones et les doublons restent prioritaires; aucune activité, aucun prix ni horaire n'est inventé.");
+                "Seules les fiches ayant passé le filtre de preuve et de planification sont candidates. Parmi elles, les suggestions sont classées selon les centres d’intérêt et le style de voyage, puis regroupées géographiquement. Les prix restent des estimations ou indisponibles; les horaires, accès et disponibilités doivent être vérifiés auprès de l'opérateur ou du site compétent. Aucun prix, horaire ou accès n'est inventé.");
         return itinerary;
     }
 }
