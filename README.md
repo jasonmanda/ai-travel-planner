@@ -141,3 +141,26 @@ Chaque recommandation conserve désormais le montant total estimé, la devise, l
 Les anciennes recommandations ne sont pas rétroactivement qualifiées : leurs champs d'instantané restent NULL lorsque l'état historique ne peut pas être établi de façon fiable.
 
 Appliquer manuellement `V22__snapshot_recommendation_budget_metadata.sql` après V21.
+
+
+## Guide IA d'un itinéraire (Spring AI / OpenAI)
+
+L'intégration Spring AI 2.0.2 est facultative et désactivée par défaut. Le moteur de recommandation et le planificateur déterministes continuent de fonctionner sans clé OpenAI.
+
+Pour activer le guide IA :
+
+```bash
+export APP_AI_ENABLED=true
+export SPRING_AI_MODEL_CHAT=openai
+export OPENAI_API_KEY="votre-cle-openai"
+export OPENAI_MODEL="gpt-5-mini"
+mvn spring-boot:run
+```
+
+Ne commitez jamais la clé API. En production, utilisez un gestionnaire de secrets. Les appels IA sont facturés par le fournisseur. Sans `SPRING_AI_MODEL_CHAT=openai`, l'auto-configuration du modèle reste désactivée.
+
+Endpoint : `POST /api/v1/itineraries/{itineraryId}/ai-guide`.
+
+Le guide travaille exclusivement à partir de l'itinéraire déjà généré et d'un sous-ensemble des informations du catalogue. Il fournit une synthèse, des conseils de lecture par journée et des rappels de vérification. Il ne recherche pas sur le web, n'ajoute pas de lieux, ne confirme aucun prix, horaire, accès, formalité ou disponibilité. Les éléments `UNVERIFIED` et les montants estimatifs restent non confirmés. Le planificateur déterministe et ses contrôles d'éligibilité restent la source de vérité.
+
+Variables supplémentaires : `APP_AI_ENABLED`, `SPRING_AI_MODEL_CHAT`, `OPENAI_API_KEY`, `OPENAI_MODEL`.
