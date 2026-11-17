@@ -162,6 +162,20 @@ class CatalogSourceTransparencyTest {
     }
 
     @Test
+    void unescoUrbanHeritageAtlasIsAnItemSpecificCandidateButNotVerification() {
+        Map<String, Object> item = item("UNVERIFIED");
+        item.put("sourceName", "UNESCO World Heritage Centre - Urban Heritage Atlas: Stone Town of Zanzibar");
+        item.put("sourceUrl", "https://whc.unesco.org/en/urban-heritage-atlas/stone-town");
+
+        Map<String, Object> transparency = CatalogSourceTransparency.describe(item);
+
+        assertEquals("ITEM_SPECIFIC_PRIMARY_CANDIDATE", transparency.get("sourceQuality"));
+        assertEquals("UNVERIFIED", transparency.get("verificationStatus"));
+        assertFalse((Boolean) transparency.get("verified"));
+        assertFalse((Boolean) transparency.get("sourceSupportsRecommendation"));
+    }
+
+    @Test
     void officialForodhaniCommitteeReportIsAnItemSpecificCandidateButNotVerification() {
         Map<String, Object> item = item("UNVERIFIED");
         item.put("sourceName", "Zanzibar House of Representatives - Budget Committee Report 2022/2023");
