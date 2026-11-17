@@ -256,6 +256,20 @@ class ItineraryGeographicPlannerTest {
         assertEquals(List.of("Documentation match"), titles(days.get(1)));
     }
 
+    @Test
+    void reportsCandidatesThatCannotFitWithinDailyCapacity() {
+        List<Map<String, Object>> candidates = List.of(
+                item("A", 0.0, 0.0),
+                item("B", 10.0, 10.0),
+                item("C", 20.0, 20.0));
+
+        ItineraryGeographicPlanner.PlanningResult result =
+                ItineraryGeographicPlanner.planWithUnplanned(candidates, 1, 2);
+
+        assertEquals(2, result.days().stream().mapToInt(List::size).sum());
+        assertEquals(List.of("C"), titles(result.unplannedItems()));
+    }
+
     private static Map<String, Object> item(String title, Double latitude, Double longitude) {
         return item(title, latitude, longitude, null);
     }
