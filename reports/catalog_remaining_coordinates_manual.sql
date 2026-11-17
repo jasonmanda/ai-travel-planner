@@ -30,7 +30,6 @@ BEGIN
        AND co.iso_code = 'MA'
        AND c.name = 'Marrakech'
        AND act.id = 3
-       AND act.name = 'Visite du Jardin Majorelle'
        AND act.latitude IS NULL
        AND act.longitude IS NULL;
     GET DIAGNOSTICS rows_updated = ROW_COUNT;
@@ -84,7 +83,6 @@ BEGIN
        AND co.iso_code = 'ZA'
        AND c.name = 'Le Cap'
        AND act.id = 5
-       AND act.name = 'Randonnée à Lion''s Head'
        AND act.latitude IS NULL
        AND act.longitude IS NULL;
     GET DIAGNOSTICS rows_updated = ROW_COUNT;
