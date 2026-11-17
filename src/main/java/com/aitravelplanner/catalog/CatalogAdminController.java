@@ -148,7 +148,17 @@ public class CatalogAdminController {
                         ('name'), ('category'), ('description'),
                         ('latitude'), ('longitude'), ('estimated_duration_minutes')
                     ) AS required(field_name)
-                    WHERE EXISTS (
+                    WHERE CASE required.field_name
+                        WHEN 'name' THEN NULLIF(BTRIM(i.name), '') IS NOT NULL
+                        WHEN 'category' THEN NULLIF(BTRIM(i.category), '') IS NOT NULL
+                        WHEN 'description' THEN NULLIF(BTRIM(i.description), '') IS NOT NULL
+                        WHEN 'latitude' THEN i.latitude IS NOT NULL
+                        WHEN 'longitude' THEN i.longitude IS NOT NULL
+                        WHEN 'estimated_duration_minutes' THEN i.estimated_duration_minutes IS NOT NULL
+                            AND i.estimated_duration_minutes > 0
+                        ELSE FALSE
+                    END
+                    AND EXISTS (
                         SELECT 1
                         FROM history h
                         WHERE h.item_type = i.item_type
