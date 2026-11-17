@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -19,15 +21,20 @@ class TravelCatalogControllerTest {
         JdbcTemplate jdbc = mock(JdbcTemplate.class);
         when(jdbc.queryForList(anyString(), any(Object[].class)))
                 .thenReturn(List.of(Map.of("id", 1L)))
-                .thenReturn(List.of(Map.of(
-                        "id", 7L,
-                        "name", "Excursion dans la forêt de Jozani",
-                        "latitude", -6.26755,
-                        "longitude", 39.41111,
-                        "geographicArea", "JOZANI",
-                        "duplicateOfType", "ATTRACTION",
-                        "duplicateOfId", 12L,
-                        "deduplicationRelation", "SAME_EXPERIENCE"
+                .thenReturn(List.of(Map.ofEntries(
+                        Map.entry("id", 7L),
+                        Map.entry("name", "Excursion dans la forêt de Jozani"),
+                        Map.entry("latitude", -6.26755),
+                        Map.entry("longitude", 39.41111),
+                        Map.entry("geographicArea", "JOZANI"),
+                        Map.entry("sourceName", "AntWeb"),
+                        Map.entry("sourceUrl", "https://www.antweb.org/locality.do?code=CEPF-TZ-10"),
+                        Map.entry("sourceType", "SCIENTIFIC"),
+                        Map.entry("sourceScope", "ITEM_SPECIFIC"),
+                        Map.entry("dataStatus", "UNVERIFIED"),
+                        Map.entry("duplicateOfType", "ATTRACTION"),
+                        Map.entry("duplicateOfId", 12L),
+                        Map.entry("deduplicationRelation", "SAME_EXPERIENCE")
                 )));
 
         TravelCatalogController controller = new TravelCatalogController(jdbc);
@@ -42,6 +49,11 @@ class TravelCatalogControllerTest {
         @SuppressWarnings("unchecked")
         Map<String, Object> quality = (Map<String, Object>) activities.getFirst().get("catalogQuality");
         assertEquals("DATA_COMPLETENESS_NOT_EXPERIENCE_QUALITY", quality.get("metric"));
-        assertEquals(20, quality.get("score"));
+        assertEquals(40, quality.get("score"));
+        @SuppressWarnings("unchecked")
+        Map<String, Object> transparency = (Map<String, Object>) activities.getFirst().get("sourceTransparency");
+        assertEquals("SCIENTIFIC_OR_GEOGRAPHIC_REFERENCE", transparency.get("sourceQuality"));
+        assertFalse((Boolean) transparency.get("sourceSupportsRecommendation"));
+        assertTrue(String.valueOf(transparency.get("sourceQualityReason")).contains("offre touristique"));
     }
 }
