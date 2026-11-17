@@ -191,7 +191,12 @@ public class CatalogAdminController {
 
     @GetMapping("/items")
     public Map<String, Object> listItems() {
-        List<Map<String, Object>> items = jdbc.queryForList(ITEMS_SQL);
+        List<Map<String, Object>> rows = jdbc.queryForList(ITEMS_SQL);
+        List<Map<String, Object>> items = rows.stream().map(row -> {
+            Map<String, Object> normalized = new LinkedHashMap<>(row);
+            normalized.put("verifiedCoreFields", verifiedCoreFields(row.get("verifiedCoreFields")));
+            return normalized;
+        }).toList();
         long fullyVerified = items.stream()
                 .filter(item -> verifiedCoreFieldCount(item) == 6)
                 .count();
@@ -213,25 +218,31 @@ public class CatalogAdminController {
         return response;
     }
 
-    private int verifiedCoreFieldCount(Map<String, Object> item) {
-        Object fields = item.get("verifiedCoreFields");
+    private List<String> verifiedCoreFields(Object fields) {
         if (fields instanceof String[] values) {
-            return values.length;
+            return List.of(values);
         }
         if (fields instanceof java.sql.Array values) {
             try {
                 Object array = values.getArray();
-                return array instanceof Object[] entries ? entries.length : 0;
+                if (array instanceof Object[] entries) {
+                    return java.util.Arrays.stream(entries).map(String::valueOf).toList();
+                }
             } catch (java.sql.SQLException ignored) {
-                return 0;
+                return List.of();
             }
         }
         if (fields instanceof Object[] values) {
-            return values.length;
+            return java.util.Arrays.stream(values).map(String::valueOf).toList();
         }
         if (fields instanceof List<?> values) {
-            return values.size();
+            return values.stream().map(String::valueOf).toList();
         }
-        return 0;
+        return List.of();
+    }
+
+    private int verifiedCoreFieldCount(Map<String, Object> item) {
+        Object fields = item.get("verifiedCoreFields");
+        return fields instanceof List<?> values ? values.size() : 0;
     }
 }
