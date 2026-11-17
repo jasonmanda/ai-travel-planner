@@ -139,6 +139,41 @@ class CatalogSourceTransparencyTest {
                 .contains("destination dans son ensemble"));
     }
 
+    @Test
+    void knownDestinationWideOfficialPagesAreNotClassifiedAsItemSpecificCandidates() {
+        String[] urls = {
+                "https://whc.unesco.org/en/list/173",
+                "https://whc.unesco.org/document/218167",
+                "https://www.bot.go.tz/Publications/Other/Tanzania%20Tourism%20Sector%20Survey%20Report.pdf",
+                "https://www.sanparks.org/parks/table-mountain",
+                "https://www.tanzaniatourism.go.tz/data/2025/08/CHAN-2024-Participant-Guidebook-1.pdf",
+                "https://www.nishati.go.tz/uploads/EAPCE25-FIRST-CIRCULAR.pdf",
+                "https://zanzibarassembly.go.tz/storage/documents/Committees/all/1677484498.pdf"
+        };
+
+        for (String url : urls) {
+            Map<String, Object> item = item("UNVERIFIED");
+            item.put("sourceUrl", url);
+
+            Map<String, Object> transparency = CatalogSourceTransparency.describe(item);
+
+            assertEquals("SOURCE_REQUIRES_REVIEW", transparency.get("sourceQuality"), url);
+            assertFalse((Boolean) transparency.get("sourceSupportsRecommendation"), url);
+        }
+    }
+
+    @Test
+    void dedicatedOfficialDetailPageCanRemainAnItemSpecificCandidate() {
+        Map<String, Object> item = item("UNVERIFIED");
+        item.put("sourceUrl",
+                "https://www.sanparks.org/parks/table-mountain/what-to-do/attractions/lions-head-signal-hill");
+
+        Map<String, Object> transparency = CatalogSourceTransparency.describe(item);
+
+        assertEquals("ITEM_SPECIFIC_PRIMARY_CANDIDATE", transparency.get("sourceQuality"));
+        assertFalse((Boolean) transparency.get("sourceSupportsRecommendation"));
+    }
+
     private static Map<String, Object> item(String status) {
         Map<String, Object> item = new LinkedHashMap<>();
         item.put("sourceName", "Portail touristique");

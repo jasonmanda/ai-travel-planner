@@ -21,7 +21,7 @@ public final class CatalogSourceTransparency {
         String verificationLevel = verificationLevel(dataStatus, documented);
         boolean specificOfficialSource = isSpecificOfficialSource(sourceType, sourceScope, item.get("sourceUrl"), documented);
         String sourceQuality = sourceQuality(sourceType, sourceScope, documented, specificOfficialSource);
-        String sourceQualityReason = sourceQualityReason(sourceType, sourceScope, documented, specificOfficialSource);
+        String sourceQualityReason = sourceQualityReason(sourceType, sourceScope, item.get("sourceUrl"), documented, specificOfficialSource);
 
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("sourceName", item.get("sourceName"));
@@ -78,7 +78,7 @@ public final class CatalogSourceTransparency {
         };
     }
 
-    private static String sourceQualityReason(String type, String scope, boolean documented, boolean specificOfficialSource) {
+    private static String sourceQualityReason(String type, String scope, Object sourceUrl, boolean documented, boolean specificOfficialSource) {
         if (!documented) {
             return "Aucun couple nom de source et URL HTTP/HTTPS exploitable n’est enregistré. Cette fiche ne dispose donc pas d’appui documentaire utilisable.";
         }
@@ -96,7 +96,10 @@ public final class CatalogSourceTransparency {
         }
         if ("OFFICIAL".equalsIgnoreCase(type) && "ITEM_SPECIFIC".equalsIgnoreCase(scope)
                 && !specificOfficialSource) {
-            return "La source est déclarée spécifique, mais son URL ressemble à une page d’accueil ou à une page générale de répertoire/information. Elle doit être examinée manuellement avant de servir de référence spécifique.";
+            if (isOfficialHomepage(sourceUrl)) {
+                return "La source est déclarée spécifique, mais son URL mène à une page d’accueil institutionnelle générale. Elle doit être remplacée par une preuve dédiée à l’élément ou examinée manuellement.";
+            }
+            return "La source est déclarée spécifique, mais son URL correspond à une page générale ou à un document institutionnel couvrant un territoire, un parc, un ensemble patrimonial ou un événement. Elle doit être remplacée par une preuve dédiée à l’élément ou examinée manuellement.";
         }
         if ("OFFICIAL".equalsIgnoreCase(type) && "ITEM_SPECIFIC".equalsIgnoreCase(scope)
                 && specificOfficialSource) {
@@ -196,6 +199,9 @@ public final class CatalogSourceTransparency {
                 return false;
             }
             String normalizedPath = path.replaceAll("/+$", "");
+            if (isKnownGeneralOfficialReference(uri.getHost(), normalizedPath)) {
+                return false;
+            }
             String finalSegment = normalizedPath.substring(normalizedPath.lastIndexOf('/') + 1)
                     .toLowerCase(Locale.ROOT);
             Set<String> generalFinalSegments = Set.of(
@@ -206,6 +212,54 @@ public final class CatalogSourceTransparency {
             // can still be item-specific. Reject only when the URL itself ends at a known
             // generic directory/information page.
             return !generalFinalSegments.contains(finalSegment);
+        } catch (java.net.URISyntaxException exception) {
+            return false;
+        }
+    }
+
+    /**
+     * Known institutional pages/documents that describe a wider destination, park,
+     * heritage area or event rather than the individual visitor attraction/activity.
+     * Keep this list conservative and mirrored by the manual SQL audit.
+     */
+    private static boolean isKnownGeneralOfficialReference(String host, String path) {
+        if (host == null) {
+            return false;
+        }
+        String normalizedHost = host.toLowerCase(Locale.ROOT);
+        if (normalizedHost.startsWith("www.")) {
+            normalizedHost = normalizedHost.substring(4);
+        }
+        String normalizedPath = path.toLowerCase(Locale.ROOT);
+        if ("whc.unesco.org".equals(normalizedHost)) {
+            return normalizedPath.equals("/en/list/173")
+                    || normalizedPath.equals("/document/218167");
+        }
+        if ("bot.go.tz".equals(normalizedHost)) {
+            return normalizedPath.replace("%20", " ").contains("tanzania tourism sector survey");
+        }
+        if ("sanparks.org".equals(normalizedHost)) {
+            return normalizedPath.equals("/parks/table-mountain");
+        }
+        if ("tanzaniatourism.go.tz".equals(normalizedHost)) {
+            return normalizedPath.contains("chan-2024-participant-guidebook");
+        }
+        if ("nishati.go.tz".equals(normalizedHost)) {
+            return normalizedPath.contains("eapce25");
+        }
+        // The Forodhani committee report is institutionally hosted and place-related,
+        // but does not establish the claimed night-market visitor activity.
+        if ("zanzibarassembly.go.tz".equals(normalizedHost)) {
+            return normalizedPath.equals("/storage/documents/committees/all/1677484498.pdf");
+        }
+        return false;
+    }
+
+    private static boolean isOfficialHomepage(Object sourceUrl) {
+        try {
+            java.net.URI uri = new java.net.URI(String.valueOf(sourceUrl).trim());
+            String path = uri.getPath();
+            return path == null || path.isBlank() || "/".equals(path);
         } catch (java.net.URISyntaxException exception) {
             return false;
         }
