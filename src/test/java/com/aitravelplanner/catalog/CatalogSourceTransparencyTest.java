@@ -147,7 +147,8 @@ class CatalogSourceTransparencyTest {
                 "https://www.bot.go.tz/Publications/Other/Tanzania%20Tourism%20Sector%20Survey%20Report.pdf",
                 "https://www.sanparks.org/parks/table-mountain",
                 "https://www.tanzaniatourism.go.tz/data/2025/08/CHAN-2024-Participant-Guidebook-1.pdf",
-                "https://www.nishati.go.tz/uploads/EAPCE25-FIRST-CIRCULAR.pdf"
+                "https://www.nishati.go.tz/uploads/EAPCE25-FIRST-CIRCULAR.pdf",
+                "https://zanzibarassembly.go.tz/storage/documents/Committees/all/1677484498.pdf"
         };
 
         for (String url : urls) {
@@ -165,7 +166,7 @@ class CatalogSourceTransparencyTest {
     void dedicatedOfficialDetailPageCanRemainAnItemSpecificCandidate() {
         Map<String, Object> item = item("UNVERIFIED");
         item.put("sourceUrl",
-                "https://www.sanparks.org/parks/table-mountain/what-to-do/activities/hikes-walks-trails");
+                "https://www.sanparks.org/parks/table-mountain/what-to-do/attractions/lions-head-signal-hill");
 
         Map<String, Object> transparency = CatalogSourceTransparency.describe(item);
 
