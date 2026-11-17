@@ -37,7 +37,7 @@ class CatalogSourceQualityTest {
         ));
 
         assertEquals("SCIENTIFIC_OR_GEOGRAPHIC_REFERENCE", result.get("sourceQuality"));
-        assertFalse((Boolean) result.get("sourceSupportsRecommendation));
+        assertFalse((Boolean) result.get("sourceSupportsRecommendation"));
         assertTrue(String.valueOf(result.get("sourceQualityReason")).contains("offre touristique"));
     }
 
@@ -80,6 +80,6 @@ class CatalogSourceQualityTest {
         ));
 
         assertEquals("SECONDARY_REFERENCE_ONLY", result.get("sourceQuality"));
-        assertFalse((Boolean) result.get("sourceSupportsRecommendation));
+        assertFalse((Boolean) result.get("sourceSupportsRecommendation"));
     }
 }
