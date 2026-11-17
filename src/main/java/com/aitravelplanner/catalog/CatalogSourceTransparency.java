@@ -244,6 +244,11 @@ public final class CatalogSourceTransparency {
         if ("nishati.go.tz".equals(normalizedHost)) {
             return normalizedPath.contains("eapce25");
         }
+        // The Forodhani committee report is institutionally hosted and place-related,
+        // but does not establish the claimed night-market visitor activity.
+        if ("zanzibarassembly.go.tz".equals(normalizedHost)) {
+            return normalizedPath.equals("/storage/documents/committees/all/1677484498.pdf");
+        }
         return false;
     }
 
