@@ -164,3 +164,26 @@ Endpoint : `POST /api/v1/itineraries/{itineraryId}/ai-guide`.
 Le guide travaille exclusivement à partir de l'itinéraire déjà généré et d'un sous-ensemble des informations du catalogue. Il fournit une synthèse, des conseils de lecture par journée et des rappels de vérification. Il ne recherche pas sur le web, n'ajoute pas de lieux, ne confirme aucun prix, horaire, accès, formalité ou disponibilité. Les éléments `UNVERIFIED` et les montants estimatifs restent non confirmés. Le planificateur déterministe et ses contrôles d'éligibilité restent la source de vérité.
 
 Variables supplémentaires : `APP_AI_ENABLED`, `SPRING_AI_MODEL_CHAT`, `OPENAI_API_KEY`, `OPENAI_MODEL`.
+
+
+## Administration du catalogue et vérification factuelle
+
+L'API d'administration expose une file de revue en lecture seule et réutilise le mécanisme existant d'historique de vérification :
+
+- `GET /api/v1/admin/catalog/items` : fiches actives, source enregistrée, six champs essentiels, valeurs courantes et champs déjà vérifiés.
+- `POST /api/v1/admin/catalog/attractions/{id}/verifications`
+- `POST /api/v1/admin/catalog/activities/{id}/verifications`
+
+Les routes `/api/v1/admin/catalog/**` sont protégées par HTTP Basic et le rôle `ADMIN`. Aucun compte n'est créé par défaut. Pour activer l'accès local, définir des identifiants hors du dépôt avant de démarrer Spring Boot :
+
+```bash
+export APP_ADMIN_USERNAME='catalog-admin'
+export APP_ADMIN_PASSWORD='choose-a-long-unique-password'
+mvn spring-boot:run
+```
+
+Ne pas committer ces valeurs et ne pas exposer HTTP Basic sans HTTPS en production. Le frontend ne conserve pas les identifiants dans le stockage du navigateur ; ils restent en mémoire pendant la session.
+
+La file de revue compte un champ comme vérifié uniquement si un événement non rejeté contient ce champ et la valeur JSONB exacte actuellement présente dans le catalogue. Le formulaire photographie les valeurs de la base côté serveur : les valeurs ne sont jamais acceptées depuis le navigateur. Les six champs essentiels sont le nom, la catégorie, la description, la latitude, la longitude et la durée.
+
+Une validation partielle ne promeut pas une fiche à `VERIFIED`. Les règles de qualité des sources et d'éligibilité aux recommandations restent inchangées. Une source opérateur demeure une source opérateur ; la validation d'un champ ne confirme pas automatiquement horaires, tarifs, disponibilité ou conditions d'accès.
